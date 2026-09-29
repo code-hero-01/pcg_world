@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from collections import deque
 import heapq
 import ontology
+import math
 
 @dataclass
 class WorldConfig:
@@ -46,7 +47,7 @@ class World:
         self.moisture = np.zeros((self.ROWS, self.COLS))
         self.flow_accumulation = np.ones((self.ROWS, self.COLS))
         self.biomes = np.zeros((self.ROWS, self.COLS))
-        self.distance_from_ocean = np.full((self.ROWS, self.COLS), -1, dtype=np.int32)
+        self.distance_to = {}
         self.entities = np.full((self.ROWS, self.COLS), -1, dtype=np.int32)
 
         self.rivers = []
@@ -123,90 +124,21 @@ class World:
 
         self.biomes = np.select(conditions, choices)
 
-        # self.accumulate_water()
-        # self.rivers = self.flow_accumulation > config.river_threshold
-        # self.biomes[self.rivers] = config.Biome.WATER.value
+    def calculate_distance_map(self, target):
+        if ontology.SPATIAL_TYPE.get(target) == ontology.SpatialType.REGION:
+            y_indices, x_indices = np.where(self.biomes == target.value)
+        elif ontology.SPATIAL_TYPE.get(target) == ontology.SpatialType.PATH:
+            y_indices, x_indices = np.where(self.entities == target.value)
+        elif ontology.SPATIAL_TYPE.get(target) == ontology.SpatialType.POINT:
+            y_indices, x_indices = np.where(self.entities == target.value)
 
-    def lowest_neighbour(self, x : int, y : int, elevation) -> tuple:
-        curr_elevation = elevation[y][x]
-        lowest_elevation = curr_elevation
-        lowest_x = x
-        lowest_y = y
-
-        for dx in [-1, 0, 1]:
-            for dy in [-1, 0, 1]:
-                # current cell
-                if dx == 0 and dy == 0:
-                    continue
-            
-                nx = x + dx
-                ny = y + dy
-
-                # out of bounds
-                if nx < 0 or nx >= self.COLS or ny < 0 or ny >= self.ROWS:
-                    continue
-
-                neighbour_elevation = elevation[ny][nx]
-
-                if neighbour_elevation < lowest_elevation:
-                    lowest_elevation = neighbour_elevation
-                    lowest_x = nx
-                    lowest_y = ny
-
-        return lowest_x, lowest_y
-
-    def calculate_flow_direction(self):
-        flow_x = np.full((self.ROWS, self.COLS), -1, dtype=np.int32)
-        flow_y = np.full((self.ROWS, self.COLS), -1, dtype=np.int32)
-
-        smoothed_elevation = self.detail.copy()
-        for _ in range(5):
-            for y in range(1, self.ROWS - 1):
-                for x in range(1, self.COLS - 1):
-                    if self.biomes[y, x] == ontology.Biome.OCEAN.value:
-                        continue
-
-                    # Check immediate 3x3 neighborhood
-                    neighbors = smoothed_elevation[y-1:y+2, x-1:x+2]
-                    min_neighbor = np.min(neighbors)
-                    if smoothed_elevation[y, x] <= min_neighbor:
-                        smoothed_elevation[y, x] = min_neighbor + 0.001
-        
-        for y in range(self.ROWS):
-            for x in range(self.COLS):
-
-                # Don't send ocean water anywhere
-                if self.biomes[y, x] == ontology.Biome.OCEAN.value:
-                    continue
-
-                nx, ny = self.lowest_neighbour(x, y, smoothed_elevation)
-
-                if nx != x or ny != y:
-                    flow_x[y, x] = nx
-                    flow_y[y, x] = ny
-
-        return flow_x, flow_y
-
-    def accumulate_water(self):
-        flow_x, flow_y = self.calculate_flow_direction()
-        flat_indices = np.argsort(self.detail.ravel())[::-1]
-
-        for index in flat_indices:
-            y, x = np.unravel_index(index, self.detail.shape)
-
-            nx = flow_x[y, x]
-            ny = flow_y[y, x]
-
-            if nx != -1 and ny != -1:
-                self.flow_accumulation[ny, nx] += self.flow_accumulation[y, x]
-
-    def calculate_distance_from_ocean(self):
         # multisource bfs
+        distance_to_target = np.full((self.ROWS, self.COLS), -1, dtype=np.float32)
         queue = deque()
-        ocean_y_indices, ocean_x_indices = np.where(self.biomes == ontology.Biome.OCEAN.value)
-        for y, x in zip(ocean_y_indices, ocean_x_indices):
+        
+        for y, x in zip(y_indices, x_indices):
             queue.append((x, y))
-            self.distance_from_ocean[y, x] = 0
+            distance_to_target[y, x] = 0
 
         directions = [
             (-1, -1), (-1, 0), (-1, 1),
@@ -222,16 +154,21 @@ class World:
                 ny = y + dy
                 if nx < 0 or nx >= self.COLS or ny < 0 or ny >= self.ROWS:
                     continue
-                if self.distance_from_ocean[ny, nx] != -1:
+                if distance_to_target[ny, nx] != -1:
                     continue
                 
                 dist = 1
                 if abs(dx) == 1 and abs(dy) == 1: # add square root of 2 for diagonal movement
                     dist = 1.414
                 
-                self.distance_from_ocean[ny, nx] = dist + self.distance_from_ocean[y, x]
+                distance_to_target[ny, nx] = dist + distance_to_target[y, x]
                                         
                 queue.append((nx, ny))
+
+        return distance_to_target
+
+    def distance_between(loc1 : tuple, loc2 : tuple) -> int:
+        return math.dist(loc1, loc2)
 
     def astar_river(self, start: tuple):
         open_set = []
@@ -305,7 +242,7 @@ class World:
 
                 if tentative_g < g_cost.get(neighbour, float('inf')):
                     g_cost[neighbour] = tentative_g
-                    f_score = g_cost[neighbour] + 0.25 * self.distance_from_ocean[neighbour]   
+                    f_score = g_cost[neighbour] + 0.25 * self.distance_to[ontology.Biome.OCEAN][neighbour]   
                     came_from[neighbour] = current
                     heapq.heappush(open_set, (f_score, neighbour))      
 
@@ -331,6 +268,8 @@ class World:
 
     def generate_rivers(self, num_rivers : int) -> list:
         river_starts = self.find_river_starts(num_rivers)
+        if ontology.Biome.OCEAN not in self.distance_to:
+            self.distance_to[ontology.Biome.OCEAN] = self.calculate_distance_map(ontology.Biome.OCEAN)
 
         for start in river_starts:
             path = self.astar_river(start)
@@ -340,11 +279,21 @@ class World:
             for x, y in river:
                 self.entities[y, x] = ontology.Entity.RIVER.value
 
-    def choose_location(self, located_in : ontology.Biome = None, located_near = None) -> tuple:
+    def proximity_location_map(self, place, min_distance: int, max_distance: int):
+        if place not in self.distance_to:
+            self.distance_to[place] = self.calculate_distance_map(place)
+        
+        return (self.distance_to[place] <= max_distance) & (self.distance_to[place] >= min_distance)
+
+    def choose_location(self, located_in : ontology.Biome = None, located_near : list = [], min_distance = 1, max_distance = 10) -> tuple:
         valid_mask = (self.entities == -1)
     
         if located_in is not None:
             valid_mask &= (self.biomes == located_in.value)
+
+        if len(located_near) != 0:
+            for place in located_near:
+                valid_mask &= self.proximity_location_map(place, min_distance, max_distance)
   
         valid_indices = np.flatnonzero(valid_mask)
 

@@ -28,7 +28,6 @@ def main():
 
     plt.imshow(world.biomes, cmap=cmap)
 
-    world.calculate_distance_from_ocean()
     world.generate_rivers(20)
 
     for river in world.rivers:
@@ -39,13 +38,16 @@ def main():
 
     village_count = 10
     for _ in range(village_count):
-        location = world.choose_location(located_in= ontology.Biome.GRASSLAND)
+        location = world.choose_location(located_in= ontology.Biome.GRASSLAND, located_near= [ontology.Entity.RIVER], min_distance= 1, max_distance= 25)
         world.place_entity(ontology.Entity.VILLAGE, location)
 
     villages_coords = np.argwhere(world.entities == ontology.Entity.VILLAGE.value)
-    for (y, x) in villages_coords:
-        plt.scatter(x, y, marker="*", color="gold", edgecolors="black", label="Villages")
+    y_indices = villages_coords[:, 0]
+    x_indices = villages_coords[:, 1]
 
+    plt.scatter(x_indices, y_indices, marker="*", color="gold", edgecolors="black", label="Villages")
+
+    plt.legend()
     plt.show()
     
 if __name__ == "__main__":
