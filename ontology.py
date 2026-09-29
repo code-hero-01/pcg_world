@@ -11,25 +11,29 @@ class Biome(Enum):
     TUNDRA = 7
     SNOWY_MOUNTAIN = 8
 
-class Entity(Enum):
-    VILLAGE = 0
-    CITY = 1
-    MINE = 2
-    RIVER = 3
-    ROAD = 4
+class Location(Enum):
+    VILLAGE = 100
+    CITY = 101
+    MINE = 102
+
+class NaturalFeature(Enum):
+    RIVER = 200
+
+class Infrastructure(Enum):
+    ROAD = 300
 
 class Relation(Enum):
     LOCATED_NEAR = 0
     LOCATED_IN = 1
     CONNECTS_TO = 2
 
-valid_relations_from = {
-    Entity.VILLAGE : {Relation.LOCATED_NEAR, Relation.LOCATED_IN, Relation.CONNECTS_TO},
-    Entity.CITY : {Relation.LOCATED_NEAR, Relation.LOCATED_IN, Relation.CONNECTS_TO},
-    Entity.MINE : {Relation.LOCATED_NEAR, Relation.LOCATED_IN, Relation.CONNECTS_TO},
+VALID_RELATIONS_FROM = {
+    Location.VILLAGE : {Relation.LOCATED_NEAR, Relation.LOCATED_IN, Relation.CONNECTS_TO},
+    Location.CITY : {Relation.LOCATED_NEAR, Relation.LOCATED_IN, Relation.CONNECTS_TO},
+    Location.MINE : {Relation.LOCATED_NEAR, Relation.LOCATED_IN, Relation.CONNECTS_TO},
 }
 
-valid_relations_to = {
+VALID_RELATIONS_TO = {
     Biome.OCEAN : {Relation.LOCATED_NEAR, Relation.LOCATED_IN},
     Biome.BEACH : {Relation.LOCATED_NEAR, Relation.LOCATED_IN},
     Biome.DESERT : {Relation.LOCATED_NEAR, Relation.LOCATED_IN},
@@ -38,11 +42,11 @@ valid_relations_to = {
     Biome.ROCKY_MOUNTAIN : {Relation.LOCATED_NEAR, Relation.LOCATED_IN},
     Biome.TUNDRA : {Relation.LOCATED_NEAR, Relation.LOCATED_IN},
     Biome.SNOWY_MOUNTAIN : {Relation.LOCATED_NEAR, Relation.LOCATED_IN},    
-    Entity.RIVER : {Relation.LOCATED_NEAR},
-    Entity.ROAD : {Relation.CONNECTS_TO},
-    Entity.VILLAGE : {Relation.LOCATED_NEAR, Relation.CONNECTS_TO},
-    Entity.CITY : {Relation.LOCATED_NEAR, Relation.CONNECTS_TO},
-    Entity.MINE : {Relation.LOCATED_NEAR, Relation.CONNECTS_TO},
+    NaturalFeature.RIVER : {Relation.LOCATED_NEAR},
+    Infrastructure.ROAD : {Relation.CONNECTS_TO},
+    Location.VILLAGE : {Relation.LOCATED_NEAR, Relation.CONNECTS_TO},
+    Location.CITY : {Relation.LOCATED_NEAR, Relation.CONNECTS_TO},
+    Location.MINE : {Relation.LOCATED_NEAR, Relation.CONNECTS_TO},
 }
 
 class SpatialType(Enum):
@@ -61,10 +65,13 @@ SPATIAL_TYPE = {
     Biome.TUNDRA: SpatialType.REGION,
     Biome.SNOWY_MOUNTAIN: SpatialType.REGION,
 
-    Entity.VILLAGE: SpatialType.POINT,
-    Entity.CITY: SpatialType.POINT,
-    Entity.MINE: SpatialType.POINT,
+    Location.VILLAGE: SpatialType.POINT,
+    Location.CITY: SpatialType.POINT,
+    Location.MINE: SpatialType.POINT,
 
-    Entity.RIVER: SpatialType.PATH,
-    Entity.ROAD: SpatialType.PATH,
+    NaturalFeature.RIVER: SpatialType.PATH,
+    Infrastructure.ROAD: SpatialType.PATH,
 }
+
+
+

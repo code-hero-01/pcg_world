@@ -109,7 +109,6 @@ class World:
             (self.elevation <= 1) & (self.moisture <= 1)
         ]
 
-        config = self.config
         choices = [
             ontology.Biome.OCEAN.value,
             ontology.Biome.BEACH.value,
@@ -133,7 +132,7 @@ class World:
             y_indices, x_indices = np.where(self.entities == target.value)
 
         # multisource bfs
-        distance_to_target = np.full((self.ROWS, self.COLS), -1, dtype=np.float32)
+        distance_to_target = np.full((self.ROWS, self.COLS), -1, dtype=np.int32)
         queue = deque()
         
         for y, x in zip(y_indices, x_indices):
@@ -158,8 +157,8 @@ class World:
                     continue
                 
                 dist = 1
-                if abs(dx) == 1 and abs(dy) == 1: # add square root of 2 for diagonal movement
-                    dist = 1.414
+                # if abs(dx) == 1 and abs(dy) == 1: # add square root of 2 for diagonal movement
+                    # dist = 1.414
                 
                 distance_to_target[ny, nx] = dist + distance_to_target[y, x]
                                         
@@ -277,7 +276,7 @@ class World:
 
         for river in self.rivers:
             for x, y in river:
-                self.entities[y, x] = ontology.Entity.RIVER.value
+                self.entities[y, x] = ontology.NaturalFeature.RIVER.value
 
     def proximity_location_map(self, place, min_distance: int, max_distance: int):
         if place not in self.distance_to:
@@ -285,14 +284,14 @@ class World:
         
         return (self.distance_to[place] <= max_distance) & (self.distance_to[place] >= min_distance)
 
-    def choose_location(self, located_in : ontology.Biome = None, located_near : list = [], min_distance = 1, max_distance = 10) -> tuple:
+    def choose_location(self, located_in : ontology.Biome = None, located_near : list = None, min_distance = 1, max_distance = 10) -> tuple:
         valid_mask = (self.entities == -1)
     
         if located_in is not None:
             valid_mask &= (self.biomes == located_in.value)
 
-        if len(located_near) != 0:
-            for place in located_near:
+        if located_near is not None:
+            for place, min_dist, max_dist in located_near:
                 valid_mask &= self.proximity_location_map(place, min_distance, max_distance)
   
         valid_indices = np.flatnonzero(valid_mask)
@@ -305,7 +304,7 @@ class World:
         else:
             return None
 
-    def place_entity(self, entity_type : ontology.Entity, location : tuple):
+    def place_entity(self, entity_type : ontology.Location, location : tuple):
         if location is None:
             print("Warning: No valid location found for this entity!")
             return
@@ -313,7 +312,7 @@ class World:
         row, col = location
         
         current_biome = self.biomes[row, col]
-        print(f"Placing {entity_type.name} at row={row}, col={col}. Biome value here is: {current_biome}")
+        print(f"Placing {entity_type.name} at row={row}, col={col}, Biome = {current_biome}")
         
         self.entities[row, col] = entity_type.value
     

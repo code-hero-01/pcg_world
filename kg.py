@@ -10,28 +10,41 @@ class WorldKG:
     def _build_rules(self):
         # biomes
         self.graph.add_node("Forest", type=ontology.Biome.FOREST)
-        self.graph.add_node("Mountain", type=ontology.Biome.ROCKY_MOUNTAIN)
+        self.graph.add_node("Grassland", type=ontology.Biome.GRASSLAND)
+        self.graph.add_node("Rocky Mountain", type=ontology.Biome.ROCKY_MOUNTAIN)
         
-
         # Entities
-        self.graph.add_node("Village_1", type=ontology.Entity.VILLAGE)
-        self.graph.add_node("City_1", type=ontology.Entity.CITY)
-        self.graph.add_node("River_1", type=ontology.Entity.RIVER)
-        self.graph.add_node("Mine_1", type=ontology.Entity.MINE)
+        self.graph.add_node("Village_1", type=ontology.Location.VILLAGE)
+        self.graph.add_node("Village_2", type=ontology.Location.VILLAGE)
+
+        self.graph.add_node("City_1", type=ontology.Location.CITY)
+        self.graph.add_node("River", type=ontology.NaturalFeature.RIVER)
+        self.graph.add_node("Mine_1", type=ontology.Location.MINE)
 
         # Relationships
         self.graph.add_edge("Village_1", "Forest", relation=ontology.Relation.LOCATED_IN)
-        self.graph.add_edge("Village_1", "River_1", relation=ontology.Relation.LOCATED_NEAR)
+        self.graph.add_edge("Village_1", "River", relation=ontology.Relation.LOCATED_NEAR)
+        self.graph.add_edge("Village_2", "Mine_1", relation=ontology.Relation.LOCATED_NEAR)
+        self.graph.add_edge("City_1", "Grassland", relation=ontology.Relation.LOCATED_IN)
         self.graph.add_edge("City_1", "Mine_1", relation=ontology.Relation.CONNECTS_TO)
         self.graph.add_edge("City_1", "Village_1", relation=ontology.Relation.CONNECTS_TO)
-        self.graph.add_edge("Mine_1", "Mountain", relation=ontology.Relation.LOCATED_IN)
+        self.graph.add_edge("Mine_1", "Rocky Mountain", relation=ontology.Relation.LOCATED_IN)
 
+    def get_entity_type(self, entity):
+        return self.graph.nodes[entity]['type']
+
+    def post_order_dfs(self):
+        return list(nx.dfs_postorder_nodes(self.graph))
+    
     def get_entities_of_type(self, entity_type):
         return [
             node 
             for node, data in self.graph.nodes(data=True) 
             if data.get('type') == entity_type
         ]
+
+    def get_neighbours(self, entity):
+        return list(self.graph.neighbors(entity))
 
     def get_constraints(self, entity):
         constraints = []
@@ -65,5 +78,3 @@ class WorldKG:
         plt.title("Entity Constraint Knowledge Graph")
         plt.show()
 
-kg = WorldKG()
-print(kg.get_constraints('Village_1'))
