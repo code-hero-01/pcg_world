@@ -11,36 +11,36 @@ class Biome(Enum):
     TUNDRA = 7
     SNOWY_MOUNTAIN = 8
 
-class Entities(Enum):
+class Entity(Enum):
     VILLAGE = 0
     CITY = 1
     MINE = 2
     ROAD = 3
     RIVER = 4
 
-class Relations(Enum):
+class Relation(Enum):
     LOCATED_NEAR = 0
     LOCATED_IN = 1
     CONNECTS_TO = 2
 
 valid_relations_from = {
-    Entities.VILLAGE : {Relations.LOCATED_NEAR, Relations.LOCATED_IN, Relations.CONNECTS_TO},
-    Entities.CITY : {Relations.LOCATED_NEAR, Relations.LOCATED_IN, Relations.CONNECTS_TO},
-    Entities.MINE : {Relations.LOCATED_NEAR, Relations.LOCATED_IN, Relations.CONNECTS_TO},
+    Entity.VILLAGE : {Relation.LOCATED_NEAR, Relation.LOCATED_IN, Relation.CONNECTS_TO},
+    Entity.CITY : {Relation.LOCATED_NEAR, Relation.LOCATED_IN, Relation.CONNECTS_TO},
+    Entity.MINE : {Relation.LOCATED_NEAR, Relation.LOCATED_IN, Relation.CONNECTS_TO},
 }
 
 valid_relations_to = {
-    Biome.OCEAN : {Relations.LOCATED_NEAR, Relations.LOCATED_IN},
-    Biome.BEACH : {Relations.LOCATED_NEAR, Relations.LOCATED_IN},
-    Biome.DESERT : {Relations.LOCATED_NEAR, Relations.LOCATED_IN},
-    Biome.GRASSLAND : {Relations.LOCATED_NEAR, Relations.LOCATED_IN},
-    Biome.SWAMP : {Relations.LOCATED_NEAR, Relations.LOCATED_IN},
-    Biome.ROCKY_MOUNTAIN : {Relations.LOCATED_NEAR, Relations.LOCATED_IN},
-    Biome.TUNDRA : {Relations.LOCATED_NEAR, Relations.LOCATED_IN},
-    Biome.SNOWY_MOUNTAIN : {Relations.LOCATED_NEAR, Relations.LOCATED_IN},    
-    Entities.RIVER : {Relations.LOCATED_NEAR},
-    Entities.RIVER: {Relations.CONNECTS_TO},
-    Entities.VILLAGE : {Relations.LOCATED_NEAR, Relations.CONNECTS_TO},
-    Entities.CITY : {Relations.LOCATED_NEAR, Relations.CONNECTS_TO},
-    Entities.MINE : {Relations.LOCATED_NEAR, Relations.CONNECTS_TO},
+    Biome.OCEAN : {Relation.LOCATED_NEAR, Relation.LOCATED_IN},
+    Biome.BEACH : {Relation.LOCATED_NEAR, Relation.LOCATED_IN},
+    Biome.DESERT : {Relation.LOCATED_NEAR, Relation.LOCATED_IN},
+    Biome.GRASSLAND : {Relation.LOCATED_NEAR, Relation.LOCATED_IN},
+    Biome.SWAMP : {Relation.LOCATED_NEAR, Relation.LOCATED_IN},
+    Biome.ROCKY_MOUNTAIN : {Relation.LOCATED_NEAR, Relation.LOCATED_IN},
+    Biome.TUNDRA : {Relation.LOCATED_NEAR, Relation.LOCATED_IN},
+    Biome.SNOWY_MOUNTAIN : {Relation.LOCATED_NEAR, Relation.LOCATED_IN},    
+    Entity.RIVER : {Relation.LOCATED_NEAR},
+    Entity.ROAD: {Relation.CONNECTS_TO},
+    Entity.VILLAGE : {Relation.LOCATED_NEAR, Relation.CONNECTS_TO},
+    Entity.CITY : {Relation.LOCATED_NEAR, Relation.CONNECTS_TO},
+    Entity.MINE : {Relation.LOCATED_NEAR, Relation.CONNECTS_TO},
 }

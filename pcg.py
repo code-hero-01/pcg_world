@@ -47,7 +47,7 @@ class World:
         self.flow_accumulation = np.ones((self.ROWS, self.COLS))
         self.biomes = np.zeros((self.ROWS, self.COLS))
         self.distance_from_ocean = np.full((self.ROWS, self.COLS), -1, dtype=np.int32)
-        self.river_map = np.zeros((self.ROWS, self.COLS), dtype=bool)
+        self.entities = np.full((self.ROWS, self.COLS), -1, dtype=np.int32)
 
         self.rivers = []
 
@@ -233,7 +233,6 @@ class World:
                                         
                 queue.append((nx, ny))
 
-
     def astar_river(self, start: tuple):
         open_set = []
         closed_set = set()
@@ -310,7 +309,6 @@ class World:
                     came_from[neighbour] = current
                     heapq.heappush(open_set, (f_score, neighbour))      
 
-
     def find_river_starts(self, num_rivers : int) -> list:
         peaks = []
         
@@ -340,4 +338,33 @@ class World:
 
         for river in self.rivers:
             for x, y in river:
-                self.river_map[y, x] = True
+                self.entities[y, x] = ontology.Entity.RIVER.value
+
+    def choose_location(self, located_in : ontology.Biome = None, located_near = None) -> tuple:
+        valid_mask = (self.entities == -1)
+    
+        if located_in is not None:
+            valid_mask &= (self.biomes == located_in.value)
+  
+        valid_indices = np.flatnonzero(valid_mask)
+
+        if valid_indices.size > 0:
+            random_idx = np.random.choice(valid_indices)
+            
+            row, col = np.unravel_index(random_idx, self.biomes.shape)
+            return (int(row), int(col))
+        else:
+            return None
+
+    def place_entity(self, entity_type : ontology.Entity, location : tuple):
+        if location is None:
+            print("Warning: No valid location found for this entity!")
+            return
+            
+        row, col = location
+        
+        current_biome = self.biomes[row, col]
+        print(f"Placing {entity_type.name} at row={row}, col={col}. Biome value here is: {current_biome}")
+        
+        self.entities[row, col] = entity_type.value
+    

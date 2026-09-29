@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 import random
 import pcg
+import ontology
   
 def main():
     seed = random.randint(0, 1000)
@@ -35,6 +36,15 @@ def main():
         y = [point[1] for point in river]
 
         plt.plot(x, y, color="steelblue", linewidth=2)
+
+    village_count = 10
+    for _ in range(village_count):
+        location = world.choose_location(located_in= ontology.Biome.GRASSLAND)
+        world.place_entity(ontology.Entity.VILLAGE, location)
+
+    villages_coords = np.argwhere(world.entities == ontology.Entity.VILLAGE.value)
+    for (y, x) in villages_coords:
+        plt.scatter(x, y, marker="*", color="gold", edgecolors="black", label="Villages")
 
     plt.show()
     
