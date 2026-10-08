@@ -1,5 +1,4 @@
 import numpy as np
-import random
 import noise
 from dataclasses import dataclass
 from collections import deque
@@ -31,12 +30,12 @@ class WorldConfig:
 
 class World:
     def __init__(self, config : WorldConfig, seed: int):
-        random.seed(seed)
+        self.rng = np.random.default_rng(seed)
 
         self.config = config
-        self.continent_offset = (random.uniform(0, 1000), random.uniform(0,1000))
-        self.detail_offset = (random.uniform(0, 1000), random.uniform(0,1000))
-        self.moisture_offset = (random.uniform(0, 1000), random.uniform(0,1000))
+        self.continent_offset = (self.rng.uniform(0, 1000), self.rng.uniform(0,1000))
+        self.detail_offset = (self.rng.uniform(0, 1000), self.rng.uniform(0,1000))
+        self.moisture_offset = (self.rng.uniform(0, 1000), self.rng.uniform(0,1000))
 
         self.ROWS = self.config.length
         self.COLS = self.config.width
@@ -166,8 +165,8 @@ class World:
 
         return distance_to_target
 
-    def distance_between(loc1 : tuple, loc2 : tuple) -> int:
-        return math.dist(loc1, loc2)
+    def chebyshev_distance(self, loc1 : tuple, loc2 : tuple) -> int:
+        return max(abs(p - q) for p, q in zip(loc1, loc2))
 
     def astar_river(self, start: tuple):
         open_set = []
@@ -262,7 +261,8 @@ class World:
         
         # If you have too many peaks, randomly select a clean subset
         if len(peaks) > num_rivers:
-            peaks = random.sample(peaks, num_rivers)
+            peaks = list(self.rng.choice(peaks, num_rivers))
+        
         return peaks               
 
     def generate_rivers(self, num_rivers : int) -> list:
@@ -271,7 +271,7 @@ class World:
             self.distance_to[ontology.Biome.OCEAN] = self.calculate_distance_map(ontology.Biome.OCEAN)
 
         for start in river_starts:
-            path = self.astar_river(start)
+            path = self.astar_river(tuple(start))
             self.rivers.append(path)
 
         for river in self.rivers:
@@ -284,7 +284,7 @@ class World:
         
         return (self.distance_to[place] <= max_distance) & (self.distance_to[place] >= min_distance)
 
-    def choose_location(self, located_in : ontology.Biome = None, located_near : list = None, min_distance = 1, max_distance = 10) -> tuple:
+    def choose_location(self, located_in : ontology.Biome = None, located_near : list = None) -> tuple:
         valid_mask = (self.entities == -1)
     
         if located_in is not None:
@@ -292,12 +292,12 @@ class World:
 
         if located_near is not None:
             for place, min_dist, max_dist in located_near:
-                valid_mask &= self.proximity_location_map(place, min_distance, max_distance)
+                valid_mask &= self.proximity_location_map(place, min_dist, max_dist)
   
         valid_indices = np.flatnonzero(valid_mask)
 
         if valid_indices.size > 0:
-            random_idx = np.random.choice(valid_indices)
+            random_idx = self.rng.choice(valid_indices)
             
             row, col = np.unravel_index(random_idx, self.biomes.shape)
             return (int(row), int(col))
@@ -311,7 +311,7 @@ class World:
             
         row, col = location
         
-        current_biome = self.biomes[row, col]
+        current_biome = ontology.Biome(self.biomes[row, col])
         print(f"Placing {entity_type.name} at row={row}, col={col}, Biome = {current_biome}")
         
         self.entities[row, col] = entity_type.value

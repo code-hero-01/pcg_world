@@ -8,8 +8,8 @@ import translator
 import kg
   
 def main():
-    seed = random.randint(0, 1000)
-    # seed = 0
+    # seed = random.randint(0, 1000)
+    seed = 0
     config = pcg.WorldConfig(length = 1000, width = 1000)
 
     world = pcg.World(config, seed)

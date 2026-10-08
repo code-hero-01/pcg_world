@@ -78,3 +78,7 @@ class WorldKG:
         plt.title("Entity Constraint Knowledge Graph")
         plt.show()
 
+
+if __name__ == "__main__":
+    kg = WorldKG()
+    kg.visualize()  
