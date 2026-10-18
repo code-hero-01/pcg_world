@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from collections import deque
 import heapq
 import ontology
-import math
+import translator
 
 @dataclass
 class WorldConfig:
@@ -28,6 +28,10 @@ class WorldConfig:
 
     river_threshold: int = 100
 
+def chebyshev_distance(loc1 : tuple, loc2 : tuple) -> int:
+        return max(abs(p - q) for p, q in zip(loc1, loc2))
+
+
 class World:
     def __init__(self, config : WorldConfig, seed: int):
         self.rng = np.random.default_rng(seed)
@@ -44,10 +48,11 @@ class World:
         self.detail = np.zeros((self.ROWS, self.COLS))
         self.elevation = np.zeros((self.ROWS, self.COLS))
         self.moisture = np.zeros((self.ROWS, self.COLS))
-        self.flow_accumulation = np.ones((self.ROWS, self.COLS))
+        # self.flow_accumulation = np.ones((self.ROWS, self.COLS))
         self.biomes = np.zeros((self.ROWS, self.COLS))
         self.distance_to = {}
-        self.entities = np.full((self.ROWS, self.COLS), -1, dtype=np.int32)
+        self.occupied = np.full((self.ROWS, self.COLS), -1, dtype=np.int32)
+        self.entity_id_map = np.full((self.ROWS, self.COLS), "", dtype= object)
 
         self.rivers = []
 
@@ -93,7 +98,7 @@ class World:
         self.elevation = self.elevation * (1.0 - (dist_from_center ** 2))
         self.elevation = normalize(self.elevation)
         
-    def generate_biomes(self):
+    def create_biomes(self):
         conditions = [
             self.elevation < 0.30,
             self.elevation < 0.35,
@@ -109,26 +114,26 @@ class World:
         ]
 
         choices = [
-            ontology.Biome.OCEAN.value,
-            ontology.Biome.BEACH.value,
-            ontology.Biome.DESERT.value,
-            ontology.Biome.GRASSLAND.value,
-            ontology.Biome.FOREST.value,
-            ontology.Biome.SWAMP.value,
-            ontology.Biome.ROCKY_MOUNTAIN.value,
-            ontology.Biome.TUNDRA.value,
-            ontology.Biome.SNOWY_MOUNTAIN.value
+            ontology.EntityType.OCEAN.value,
+            ontology.EntityType.BEACH.value,
+            ontology.EntityType.DESERT.value,
+            ontology.EntityType.GRASSLAND.value,
+            ontology.EntityType.FOREST.value,
+            ontology.EntityType.SWAMP.value,
+            ontology.EntityType.ROCKY_MOUNTAIN.value,
+            ontology.EntityType.TUNDRA.value,
+            ontology.EntityType.SNOWY_MOUNTAIN.value
         ]
 
         self.biomes = np.select(conditions, choices)
 
     def calculate_distance_map(self, target):
-        if ontology.SPATIAL_TYPE.get(target) == ontology.SpatialType.REGION:
+        if ontology.SPATIAL_TYPE_MAP.get(target) == ontology.SpatialType.BIOME:
             y_indices, x_indices = np.where(self.biomes == target.value)
-        elif ontology.SPATIAL_TYPE.get(target) == ontology.SpatialType.PATH:
-            y_indices, x_indices = np.where(self.entities == target.value)
-        elif ontology.SPATIAL_TYPE.get(target) == ontology.SpatialType.POINT:
-            y_indices, x_indices = np.where(self.entities == target.value)
+        elif ontology.SPATIAL_TYPE_MAP.get(target) == ontology.SpatialType.FEATURE:
+            y_indices, x_indices = np.where(self.occupied == target.value)
+        elif ontology.SPATIAL_TYPE_MAP.get(target) == ontology.SpatialType.POINT:
+            y_indices, x_indices = np.where(self.occupied == target.value)
 
         # multisource bfs
         distance_to_target = np.full((self.ROWS, self.COLS), -1, dtype=np.int32)
@@ -155,20 +160,18 @@ class World:
                 if distance_to_target[ny, nx] != -1:
                     continue
                 
-                dist = 1
+                step = 1
                 # if abs(dx) == 1 and abs(dy) == 1: # add square root of 2 for diagonal movement
-                    # dist = 1.414
+                    # step = 1.414
                 
-                distance_to_target[ny, nx] = dist + distance_to_target[y, x]
+                distance_to_target[ny, nx] = step + distance_to_target[y, x]
                                         
                 queue.append((nx, ny))
 
         return distance_to_target
 
-    def chebyshev_distance(self, loc1 : tuple, loc2 : tuple) -> int:
-        return max(abs(p - q) for p, q in zip(loc1, loc2))
-
-    def astar_river(self, start: tuple):
+    
+    def _astar_river(self, start: tuple):
         open_set = []
         closed_set = set()
         heapq.heappush(open_set, (0, start))
@@ -192,7 +195,7 @@ class World:
 
             closed_set.add(current)
 
-            if self.biomes[y, x] == ontology.Biome.OCEAN.value:
+            if self.biomes[y, x] == ontology.EntityType.OCEAN.value:
                 path = []
                 while current in came_from:
                     path.append(current)
@@ -237,14 +240,14 @@ class World:
                 # Combine costs
                 movement_cost = dist + elevation_cost + abs(terrain_roughness)
                 tentative_g = g_cost[current] + movement_cost
-
+ 
                 if tentative_g < g_cost.get(neighbour, float('inf')):
                     g_cost[neighbour] = tentative_g
-                    f_score = g_cost[neighbour] + 0.25 * self.distance_to[ontology.Biome.OCEAN][neighbour]   
+                    f_score = g_cost[neighbour] + 0.25 * self.distance_to[ontology.EntityType.OCEAN][neighbour]   
                     came_from[neighbour] = current
                     heapq.heappush(open_set, (f_score, neighbour))      
 
-    def find_river_starts(self, num_rivers : int) -> list:
+    def _find_river_starts(self, num_rivers : int) -> list:
         peaks = []
         
         # Avoid the absolute outer edge of the map to prevent index errors
@@ -266,53 +269,75 @@ class World:
         return peaks               
 
     def generate_rivers(self, num_rivers : int) -> list:
-        river_starts = self.find_river_starts(num_rivers)
-        if ontology.Biome.OCEAN not in self.distance_to:
-            self.distance_to[ontology.Biome.OCEAN] = self.calculate_distance_map(ontology.Biome.OCEAN)
+        river_starts = self._find_river_starts(num_rivers)
+        if ontology.EntityType.OCEAN not in self.distance_to:
+            self.distance_to[ontology.EntityType.OCEAN] = self.calculate_distance_map(ontology.EntityType.OCEAN)
 
         for start in river_starts:
-            path = self.astar_river(tuple(start))
+            path = self._astar_river(tuple(start))
             self.rivers.append(path)
 
         for river in self.rivers:
             for x, y in river:
-                self.entities[y, x] = ontology.NaturalFeature.RIVER.value
+                self.occupied[y, x] = ontology.EntityType.RIVER.value
 
-    def proximity_location_map(self, place, min_distance: int, max_distance: int):
-        if place not in self.distance_to:
-            self.distance_to[place] = self.calculate_distance_map(place)
-        
-        return (self.distance_to[place] <= max_distance) & (self.distance_to[place] >= min_distance)
+    def get_region_mask(self, constraint : translator.RegionConstraint):
+        region_mask = (self.occupied == -1)
 
-    def choose_location(self, located_in : ontology.Biome = None, located_near : list = None) -> tuple:
-        valid_mask = (self.entities == -1)
+        if constraint.biome is not None:
+            region_mask &= (self.biomes == constraint.biome.value)
+
+        return region_mask
     
-        if located_in is not None:
-            valid_mask &= (self.biomes == located_in.value)
+    def get_proximity_mask(self, constraint : translator.ProximityConstraint):
+        proximity_mask = (self.occupied == -1)
+        
+        if constraint.target not in self.distance_to:
+            self.distance_to[constraint.target] = self.calculate_distance_map(constraint.target_type)
+        
+        proximity_mask &= (self.distance_to[constraint.target] <= constraint.max_distance) & (self.distance_to[constraint.target] >= constraint.min_distance)
 
-        if located_near is not None:
-            for place, min_dist, max_dist in located_near:
-                valid_mask &= self.proximity_location_map(place, min_dist, max_dist)
+        return proximity_mask
+
+    def get_free_mask(self):
+        return self.occupied == -1
+
+    # def choose_location(self, located_in : ontology.EntityType = None, located_near : list = None) -> tuple:
+    #     valid_mask = (self.occupied == -1)
+    
+    #     if located_in is not None:
+    #         valid_mask &= (self.biomes == located_in.value)
+
+    #     if located_near is not None:
+    #         for place, min_dist, max_dist in located_near:
+    #             valid_mask &= self.get_proximity_mask(place, min_dist, max_dist)
   
-        valid_indices = np.flatnonzero(valid_mask)
+    #     valid_indices = np.flatnonzero(valid_mask)
 
-        if valid_indices.size > 0:
-            random_idx = self.rng.choice(valid_indices)
+    #     if valid_indices.size > 0:
+    #         random_idx = self.rng.choice(valid_indices)
             
-            row, col = np.unravel_index(random_idx, self.biomes.shape)
-            return (int(row), int(col))
-        else:
-            return None
+    #         row, col = np.unravel_index(random_idx, self.biomes.shape)
+    #         return (int(row), int(col))
+    #     else:
+    #         return None
+        
 
-    def place_entity(self, entity_type : ontology.Location, location : tuple):
+    def place_entity(self, entity_id : str, entity_type : ontology.EntityType, location : tuple):
         if location is None:
             print("Warning: No valid location found for this entity!")
             return
             
         row, col = location
         
-        current_biome = ontology.Biome(self.biomes[row, col])
-        print(f"Placing {entity_type.name} at row={row}, col={col}, Biome = {current_biome}")
+        current_biome = ontology.EntityType(self.biomes[row, col])
+        print(f"Placing {entity_id} of type {entity_type.name} at row={row}, col={col}, Biome = {current_biome}")
         
-        self.entities[row, col] = entity_type.value
+        self.occupied[row, col] = entity_type.value
+        self.entity_id_map[row, col] = entity_id
+
+
+    def random_choose(self, arr):
+        return self.rng.choice(arr)
+
     

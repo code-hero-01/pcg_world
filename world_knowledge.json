@@ -1,0 +1,59 @@
+{
+  "directed": true,
+  "multigraph": true,
+  "graph": {
+    "description": "Game world knowledge graph"
+  },
+  "nodes": [
+    {"id": "Ocean", "entity_type": "OCEAN"},
+    {"id": "Beach", "entity_type": "BEACH"},
+    {"id": "Desert", "entity_type": "DESERT"},
+    {"id": "Forest", "entity_type": "FOREST"},
+    {"id": "Grassland", "entity_type": "GRASSLAND"},
+    {"id": "Swamp", "entity_type": "SWAMP"},
+    {"id": "Rocky_Mountain", "entity_type": "ROCKY_MOUNTAIN"},
+    {"id": "Tundra", "entity_type": "TUNDRA"},
+    {"id": "Snowy_Mountain", "entity_type": "SNOWY_MOUNTAIN"},   
+    
+    {"id": "River", "entity_type": "RIVER"},
+
+    {"id": "Village_1", "entity_type": "VILLAGE"},
+    {"id": "Village_2", "entity_type": "VILLAGE"},
+    {"id": "Village_3", "entity_type": "VILLAGE"},
+    {"id": "Village_4", "entity_type": "VILLAGE"},
+
+    {"id": "Mine_1", "entity_type": "MINE"},
+    {"id": "Mine_2", "entity_type": "MINE"},
+    {"id": "Mine_3", "entity_type": "MINE"},
+
+    {"id": "City_1", "entity_type": "CITY"},
+    {"id": "City_2", "entity_type": "CITY"},
+    {"id": "City_3", "entity_type": "CITY"},
+    {"id": "City_4", "entity_type": "CITY"}
+  ],
+  
+  "edges": [
+    { "source": "Village_1", "target": "Forest", "relation_type": "LOCATED_IN"},
+    { "source": "Village_1", "target": "River", "relation_type": "LOCATED_NEAR", "min_distance": 25, "max_distance": 50},
+
+    { "source": "Village_2", "target": "Ocean", "relation_type": "LOCATED_NEAR", "min_distance": 25, "max_distance": 50},
+
+    { "source": "Village_3", "target": "Mine_1", "relation_type": "LOCATED_NEAR", "min_distance": 25, "max_distance": 50},
+
+    { "source": "Village_4", "target": "Tundra", "relation_type": "LOCATED_IN"},
+
+    { "source": "City_1", "target": "Grassland", "relation_type": "LOCATED_IN"},
+    { "source": "City_1", "target": "Mine_2", "relation_type": "LOCATED_NEAR", "min_distance": 25, "max_distance": 50},
+    { "source": "City_1", "target": "Village_1", "relation_type": "CONNECTS_TO"},
+
+    { "source": "City_2", "target": "Mine_3", "relation_type": "LOCATED_NEAR", "min_distance": 25, "max_distance": 50},
+        
+    { "source": "City_3", "target": "River", "relation_type": "LOCATED_NEAR", "min_distance": 25, "max_distance": 50},
+
+    { "source": "City_4", "target": "Desert", "relation_type": "LOCATED_IN"},
+
+    { "source": "Mine_1", "target": "Rocky_Mountain", "relation_type": "LOCATED_IN"},
+    { "source": "Mine_2", "target": "Rocky_Mountain", "relation_type": "LOCATED_IN"},
+    { "source": "Mine_3", "target": "Rocky_Mountain", "relation_type": "LOCATED_IN"}
+  ]
+}

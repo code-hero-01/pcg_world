@@ -1,77 +1,95 @@
-from enum import Enum
+from enum import Enum, auto
+from dataclasses import dataclass
 
-class Biome(Enum):
-    OCEAN = 0
-    BEACH = 1
-    DESERT = 2
-    GRASSLAND = 3
-    FOREST = 4
-    SWAMP = 5
-    ROCKY_MOUNTAIN = 6
-    TUNDRA = 7
-    SNOWY_MOUNTAIN = 8
+class EntityType(Enum):
+    # biomes
+    OCEAN = auto()
+    BEACH = auto()
+    DESERT = auto()
+    GRASSLAND = auto()
+    FOREST = auto()
+    SWAMP = auto()
+    ROCKY_MOUNTAIN = auto()
+    TUNDRA = auto()
+    SNOWY_MOUNTAIN = auto()
 
-class Location(Enum):
-    VILLAGE = 100
-    CITY = 101
-    MINE = 102
+    VILLAGE = auto()
+    CITY = auto()
+    MINE = auto()
 
-class NaturalFeature(Enum):
-    RIVER = 200
+    RIVER = auto()
 
-class Infrastructure(Enum):
-    ROAD = 300
+    ROAD = auto()
 
-class Relation(Enum):
-    LOCATED_NEAR = 0
-    LOCATED_IN = 1
-    CONNECTS_TO = 2
+class RelationType(Enum):
+    LOCATED_NEAR = auto()
+    LOCATED_IN = auto()
+    CONNECTS_TO = auto()
 
-VALID_RELATIONS_FROM = {
-    Location.VILLAGE : {Relation.LOCATED_NEAR, Relation.LOCATED_IN, Relation.CONNECTS_TO},
-    Location.CITY : {Relation.LOCATED_NEAR, Relation.LOCATED_IN, Relation.CONNECTS_TO},
-    Location.MINE : {Relation.LOCATED_NEAR, Relation.LOCATED_IN, Relation.CONNECTS_TO},
+class SpatialType(Enum): 
+    BIOME = 0        # large regions (oceans, forests...)
+    POINT = 1        # singe-cell entities (villages, cities, mines...)
+    FEATURE = 2      # multi-cell entities
+
+SPATIAL_TYPE_MAP = {
+    EntityType.OCEAN: SpatialType.BIOME,
+    EntityType.BEACH: SpatialType.BIOME,
+    EntityType.DESERT: SpatialType.BIOME,
+    EntityType.GRASSLAND: SpatialType.BIOME,
+    EntityType.FOREST: SpatialType.BIOME,
+    EntityType.SWAMP: SpatialType.BIOME,
+    EntityType.ROCKY_MOUNTAIN: SpatialType.BIOME,
+    EntityType.TUNDRA: SpatialType.BIOME,
+    EntityType.SNOWY_MOUNTAIN: SpatialType.BIOME,
+
+    EntityType.VILLAGE: SpatialType.POINT,
+    EntityType.CITY: SpatialType.POINT,
+    EntityType.MINE: SpatialType.POINT,
+
+    EntityType.RIVER: SpatialType.FEATURE,
+    EntityType.ROAD: SpatialType.FEATURE,
 }
 
-VALID_RELATIONS_TO = {
-    Biome.OCEAN : {Relation.LOCATED_NEAR, Relation.LOCATED_IN},
-    Biome.BEACH : {Relation.LOCATED_NEAR, Relation.LOCATED_IN},
-    Biome.DESERT : {Relation.LOCATED_NEAR, Relation.LOCATED_IN},
-    Biome.GRASSLAND : {Relation.LOCATED_NEAR, Relation.LOCATED_IN},
-    Biome.SWAMP : {Relation.LOCATED_NEAR, Relation.LOCATED_IN},
-    Biome.ROCKY_MOUNTAIN : {Relation.LOCATED_NEAR, Relation.LOCATED_IN},
-    Biome.TUNDRA : {Relation.LOCATED_NEAR, Relation.LOCATED_IN},
-    Biome.SNOWY_MOUNTAIN : {Relation.LOCATED_NEAR, Relation.LOCATED_IN},    
-    NaturalFeature.RIVER : {Relation.LOCATED_NEAR},
-    Infrastructure.ROAD : {Relation.CONNECTS_TO},
-    Location.VILLAGE : {Relation.LOCATED_NEAR, Relation.CONNECTS_TO},
-    Location.CITY : {Relation.LOCATED_NEAR, Relation.CONNECTS_TO},
-    Location.MINE : {Relation.LOCATED_NEAR, Relation.CONNECTS_TO},
+SPAWNABLE = {
+    EntityType.VILLAGE,
+    EntityType.CITY,
+    EntityType.MINE 
 }
 
-class SpatialType(Enum):
-    REGION = 0       # biomes (oceans, forests...)
-    POINT = 1        # entities (villages, cities, mines...)
-    PATH = 2         # paths (rivers, roads...)
+@dataclass
+class LOCATED_IN:
+    symmetric = False
 
-SPATIAL_TYPE = {
-    Biome.OCEAN: SpatialType.REGION,
-    Biome.BEACH: SpatialType.REGION,
-    Biome.DESERT: SpatialType.REGION,
-    Biome.GRASSLAND: SpatialType.REGION,
-    Biome.FOREST: SpatialType.REGION,
-    Biome.SWAMP: SpatialType.REGION,
-    Biome.ROCKY_MOUNTAIN: SpatialType.REGION,
-    Biome.TUNDRA: SpatialType.REGION,
-    Biome.SNOWY_MOUNTAIN: SpatialType.REGION,
+@dataclass
+class LOCATED_NEAR:
+    min_distance: int
+    max_distance: int
+    symmetric = True
 
-    Location.VILLAGE: SpatialType.POINT,
-    Location.CITY: SpatialType.POINT,
-    Location.MINE: SpatialType.POINT,
 
-    NaturalFeature.RIVER: SpatialType.PATH,
-    Infrastructure.ROAD: SpatialType.PATH,
+VALID_CONSTRAINTS_FROM = {
+    EntityType.VILLAGE : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.CONNECTS_TO},
+    EntityType.CITY : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.CONNECTS_TO},
+    EntityType.MINE : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.CONNECTS_TO},
 }
+
+VALID_CONSTRAINTS_TO = {
+    EntityType.OCEAN : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN},
+    EntityType.BEACH : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN},
+    EntityType.DESERT : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN},
+    EntityType.GRASSLAND : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN},
+    EntityType.SWAMP : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN},
+    EntityType.ROCKY_MOUNTAIN : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN},
+    EntityType.TUNDRA : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN},
+    EntityType.SNOWY_MOUNTAIN : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN},    
+    EntityType.RIVER : {RelationType.LOCATED_NEAR},
+    EntityType.ROAD : {RelationType.CONNECTS_TO},
+    EntityType.VILLAGE : {RelationType.LOCATED_NEAR, RelationType.CONNECTS_TO},
+    EntityType.CITY : {RelationType.LOCATED_NEAR, RelationType.CONNECTS_TO},
+    EntityType.MINE : {RelationType.LOCATED_NEAR, RelationType.CONNECTS_TO},
+}
+
+
 
 
 
