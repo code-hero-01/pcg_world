@@ -55,6 +55,7 @@ class World:
         self.entity_id_map = np.full((self.ROWS, self.COLS), "", dtype= object)
 
         self.rivers = []
+        self.roads = []
 
     def generate_terrain(self):
         config = self.config
@@ -127,13 +128,15 @@ class World:
 
         self.biomes = np.select(conditions, choices)
 
-    def calculate_distance_map(self, target):
-        if ontology.SPATIAL_TYPE_MAP.get(target) == ontology.SpatialType.BIOME:
-            y_indices, x_indices = np.where(self.biomes == target.value)
-        elif ontology.SPATIAL_TYPE_MAP.get(target) == ontology.SpatialType.FEATURE:
-            y_indices, x_indices = np.where(self.occupied == target.value)
-        elif ontology.SPATIAL_TYPE_MAP.get(target) == ontology.SpatialType.POINT:
-            y_indices, x_indices = np.where(self.occupied == target.value)
+    def calculate_distance_map(self, target_type= None, target_id = None):
+        if target_id is not None:
+            y_indices, x_indices = np.where(self.entity_id_map == target_id)
+        elif ontology.SPATIAL_TYPE_MAP.get(target_type) == ontology.SpatialType.BIOME:
+            y_indices, x_indices = np.where(self.biomes == target_type.value)
+        elif ontology.SPATIAL_TYPE_MAP.get(target_type) == ontology.SpatialType.FEATURE:
+            y_indices, x_indices = np.where(self.occupied == target_type.value)
+        elif ontology.SPATIAL_TYPE_MAP.get(target_type) == ontology.SpatialType.POINT:
+            y_indices, x_indices = np.where(self.occupied == target_type.value)
 
         # multisource bfs
         distance_to_target = np.full((self.ROWS, self.COLS), -1, dtype=np.int32)
@@ -213,7 +216,8 @@ class World:
                 if neighbour in closed_set:
                     continue
 
-                dist = 1.414 if (abs(dx) == 1 and abs(dy) == 1) else 1.0
+                # dist = 1.414 if (abs(dx) == 1 and abs(dy) == 1) else 1.0
+                dist = 1
 
                 # 1. ADD MICRO-TERRAIN TURMOIL NOISE
                 # Use a fast noise function to create localized "pockets" of resistance.
@@ -225,7 +229,7 @@ class World:
                     persistence=0.5
                 ) * 5.0 # Amplify to influence path choices
 
-                elevation_diff = self.detail[ny, nx] - self.detail[y, x]
+                elevation_diff = self.elevation[ny, nx] - self.elevation[y, x]
             
                 if elevation_diff > 0:
                     # Going uphill is heavily penalized
@@ -238,16 +242,16 @@ class World:
                     elevation_cost = elevation_diff  
 
                 # Combine costs
-                movement_cost = dist + elevation_cost + abs(terrain_roughness)
-                tentative_g = g_cost[current] + movement_cost
+                flow_cost = dist + elevation_cost + abs(terrain_roughness)
+                tentative_g = g_cost[current] + flow_cost
  
                 if tentative_g < g_cost.get(neighbour, float('inf')):
                     g_cost[neighbour] = tentative_g
-                    f_score = g_cost[neighbour] + 0.25 * self.distance_to[ontology.EntityType.OCEAN][neighbour]   
+                    f_score = g_cost[neighbour] + 0.25 * self.distance_to[ontology.EntityType.OCEAN][ny, nx]   
                     came_from[neighbour] = current
                     heapq.heappush(open_set, (f_score, neighbour))      
 
-    def _find_river_starts(self, num_rivers : int) -> list:
+    def _find_river_starts(self) -> list:
         peaks = []
         
         # Avoid the absolute outer edge of the map to prevent index errors
@@ -255,21 +259,20 @@ class World:
             for x in range(1, self.COLS - 1):
                 # Apply your core biome condi
                 # tions first
-                if self.detail[y, x] > 0.7 and self.moisture[y, x] > 0.5:
-                    
+                if self.elevation[y, x] > 0.7 and self.moisture[y, x] > 0.5:
                     # Check if this cell is strictly higher than its 3x3 neighborhood
-                    neighborhood = self.detail[y-1:y+2, x-1:x+2]
-                    if self.detail[y, x] == np.max(neighborhood):
+                    neighborhood = self.elevation[y-1:y+2, x-1:x+2]
+                    
+                    if self.elevation[y, x] == np.max(neighborhood):
                         peaks.append((x, y))
-        
-        # If you have too many peaks, randomly select a clean subset
-        if len(peaks) > num_rivers:
-            peaks = list(self.rng.choice(peaks, num_rivers))
-        
+                
         return peaks               
 
     def generate_rivers(self, num_rivers : int) -> list:
-        river_starts = self._find_river_starts(num_rivers)
+        river_starts = self._find_river_starts()
+        if len(river_starts) > num_rivers:
+            river_starts = list(self.rng.choice(river_starts, num_rivers))
+
         if ontology.EntityType.OCEAN not in self.distance_to:
             self.distance_to[ontology.EntityType.OCEAN] = self.calculate_distance_map(ontology.EntityType.OCEAN)
 
@@ -291,9 +294,13 @@ class World:
     
     def get_proximity_mask(self, constraint : translator.ProximityConstraint):
         proximity_mask = (self.occupied == -1)
-        
+
         if constraint.target not in self.distance_to:
-            self.distance_to[constraint.target] = self.calculate_distance_map(constraint.target_type)
+            if ontology.SPATIAL_TYPE_MAP[constraint.target_type] == ontology.SpatialType.POINT: 
+                self.distance_to[constraint.target] = self.calculate_distance_map(target_id= constraint.target)
+            else:
+                self.distance_to[constraint.target] = self.calculate_distance_map(target_type= constraint.target_type)
+
         
         proximity_mask &= (self.distance_to[constraint.target] <= constraint.max_distance) & (self.distance_to[constraint.target] >= constraint.min_distance)
 
@@ -301,26 +308,6 @@ class World:
 
     def get_free_mask(self):
         return self.occupied == -1
-
-    # def choose_location(self, located_in : ontology.EntityType = None, located_near : list = None) -> tuple:
-    #     valid_mask = (self.occupied == -1)
-    
-    #     if located_in is not None:
-    #         valid_mask &= (self.biomes == located_in.value)
-
-    #     if located_near is not None:
-    #         for place, min_dist, max_dist in located_near:
-    #             valid_mask &= self.get_proximity_mask(place, min_dist, max_dist)
-  
-    #     valid_indices = np.flatnonzero(valid_mask)
-
-    #     if valid_indices.size > 0:
-    #         random_idx = self.rng.choice(valid_indices)
-            
-    #         row, col = np.unravel_index(random_idx, self.biomes.shape)
-    #         return (int(row), int(col))
-    #     else:
-    #         return None
         
 
     def place_entity(self, entity_id : str, entity_type : ontology.EntityType, location : tuple):
@@ -339,5 +326,96 @@ class World:
 
     def random_choose(self, arr):
         return self.rng.choice(arr)
+
+    def generate_connection(self, connection_constraint):  # a_star road
+        start = connection_constraint.source
+        goal = connection_constraint.target
+
+        indices = np.where(self.entity_id_map == start)
+        start_cell = int(indices[1][0]), int(indices[0][0])
+
+        open_set = []
+        closed_set = set()
+        heapq.heappush(open_set, (0, start_cell))
+
+        directions = [
+                    (-1, -1), (-1, 0), (-1, 1),
+                    (0, -1),           (0, 1),
+                    (1, -1),  (1, 0),  (1, 1)
+                ]
+
+        g_cost = {start_cell: 0}
+        came_from = {}
+
+        while open_set:
+            # get node with lowest f_cost
+            current_f, current = heapq.heappop(open_set)
+            x, y = current
+
+            if current in closed_set:
+                continue
+
+            closed_set.add(current)
+
+            if self.entity_id_map[y, x] == goal:
+                path = []
+                while current in came_from:
+                    path.append(current)
+                    current = came_from[current]
+                path.append(start_cell)
+                path.reverse()
+
+                self.roads.append(path)
+                for x, y in path:
+                    self.occupied[y, x] = ontology.EntityType.ROAD.value
+
+            # explore neighbours
+            for dx, dy in directions:
+                nx = x + dx
+                ny = y + dy
+                neighbour = (nx, ny)
+                if nx < 0 or nx >= self.COLS or ny < 0 or ny >= self.ROWS:
+                    continue
+                if neighbour in closed_set:
+                    continue
+                if self.biomes[ny, nx] == ontology.EntityType.OCEAN.value:
+                    continue
+
+                # dist = 1.414 if (abs(dx) == 1 and abs(dy) == 1) else 1.0
+                dist = 1
+
+                # 1. ADD TERRAIN NOISE TO MAKE THE ROADS WINDING
+                terrain_roughness = noise.pnoise2(
+                    nx / 30.0, 
+                    ny / 30.0, 
+                    octaves=1, 
+                    persistence=0.5
+                ) * 10.0 # Amplify to influence path choices
+
+                elevation_diff = self.elevation[ny, nx] - self.elevation[y, x]
+            
+                if elevation_diff > 0:
+                    # Going uphill is heavily penalized
+                    elevation_cost = elevation_diff * 100.0 
+                elif elevation_diff == 0:
+                    # Flat ground is encouraged
+                    elevation_cost = 0
+                else:
+                    # Downhill movement is penalized
+                    elevation_cost = -elevation_diff * 50  
+
+                # Combine costs
+                exploration_cost = dist + elevation_cost + abs(terrain_roughness)
+                tentative_g = g_cost[current] + exploration_cost
+    
+                if tentative_g < g_cost.get(neighbour, float('inf')):
+                    g_cost[neighbour] = tentative_g
+
+                    if goal not in self.distance_to:
+                        self.distance_to[goal] = self.calculate_distance_map(target_id= goal)
+
+                    f_score = g_cost[neighbour] + 0.25 * self.distance_to[goal][ny, nx]   
+                    came_from[neighbour] = current
+                    heapq.heappush(open_set, (f_score, neighbour))
 
     

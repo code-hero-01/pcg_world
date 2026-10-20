@@ -3,20 +3,6 @@ from dataclasses import dataclass, field
 import knowledge, translator
 import networkx as nx
 
-# class TaskType(Enum):
-#     GENERATE_TERRAIN = auto()
-#     GENERATE_BIOMES = auto()
-#     GENERATE_RIVERS = auto()
-
-#     PLACE_ENTITY = auto()
-#     CONNECT = auto()
-
-# @dataclass
-# class Task:
-#     task_type: TaskType
-#     entity_id: str | None = None
-#     constraints: list = field(default_factory=list)
-
 class Planner:
     def __init__(self):
         self.plan = []
@@ -35,24 +21,6 @@ class Planner:
         for entity in spawnable_entities:
             if entity not in self.plan:
                 self.plan.append(entity)
-
-
-        # self.tasks = []
-
-        # generate_terrain = Task(task_type= TaskType.GENERATE_TERRAIN)
-        # generate_biomes = Task(task_type= TaskType.GENERATE_BIOMES)
-        # generate_rivers = Task(task_type= TaskType.GENERATE_RIVERS)
-
-        # self.tasks.append(generate_terrain) 
-        # self.tasks.append(generate_biomes)
-        # self.tasks.append(generate_rivers)
-
-        # for entity, constraint_list in constraints.items():
-        #     prerequisites = []
-            
-        #     for constraint in constraint_list:
-        #         prerequisites.append(constraint)
-           
 
 if __name__ == "__main__":
     kg = knowledge.WorldKG()

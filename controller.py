@@ -51,6 +51,10 @@ class Controller:
             else:
                 print(f"Warning: No valid location found for the entity {entity}!")
 
+    def create_connections(self):
+        for constraint in self.translator.connections:
+            print(f"Connecting {constraint.source} to {constraint.target}")
+            self.world.generate_connection(constraint)
 
     def display(self):
         cmap = ListedColormap([
@@ -71,7 +75,13 @@ class Controller:
             x = [point[0] for point in river]
             y = [point[1] for point in river]
     
-            plt.plot(x, y, color="steelblue", linewidth=2)
+            plt.plot(x, y, color="steelblue", linewidth=2, zorder= 2)
+
+        for road in self.world.roads:
+            x = [point[0] for point in road]
+            y = [point[1] for point in road]
+            
+            plt.plot(x, y, color="#edd4a5", linewidth=2, zorder= 3)
     
     
         # village_count = 10
@@ -94,7 +104,8 @@ class Controller:
                 color= "gold", 
                 edgecolors= "black", 
                 s= 25,
-                label= entity
+                label= entity,
+                zorder= 4
             )
     
             i += 1

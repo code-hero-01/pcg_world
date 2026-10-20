@@ -86,6 +86,7 @@ def main():
     controller.create_biomes()
     controller.generate_rivers(20)
     controller.spawn_entities()
+    controller.create_connections()
 
     # plt.imshow(world.elevation, cmap="Greys")
     # plt.show()    
