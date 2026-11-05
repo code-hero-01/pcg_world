@@ -1,9 +1,9 @@
-import knowledge
-from translator import Translator
+import src.knowledge as knowledge
+from src.translator import Translator
 import networkx as nx
 import sys
-import primitives
-import ontology
+import src.primitives as primitives
+import src.ontology as ontology
 
 class Planner:
     def __init__(self, translator: Translator):

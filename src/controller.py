@@ -1,13 +1,13 @@
-import pcg
-import knowledge
-from translator import Translator
-from planner import Planner
+import src.pcg as pcg
+import src.knowledge as knowledge
+from src.translator import Translator
+from src.planner import Planner
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
-import primitives
+import src.primitives as primitives
 import sys
-from primitives import TaskType, GenerationTask
+from src.primitives import TaskType, GenerationTask
 
 class Controller:
     def __init__(self, world : pcg.World, kg : knowledge.WorldKG):

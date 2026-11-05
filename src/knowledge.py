@@ -1,6 +1,6 @@
 import networkx as nx
 from matplotlib import pyplot as plt 
-import ontology
+import src.ontology as ontology
 import json
 import sys
 

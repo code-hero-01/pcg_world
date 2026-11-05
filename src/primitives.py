@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-import ontology
+import src.ontology as ontology
 from enum import Enum, auto
 
 @dataclass(frozen=True)

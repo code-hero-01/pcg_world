@@ -3,8 +3,8 @@ import noise
 from dataclasses import dataclass
 from collections import deque
 import heapq
-import ontology
-import primitives
+import src.ontology as ontology
+import src.primitives as primitives
 
 
 @dataclass

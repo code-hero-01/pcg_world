@@ -1,6 +1,6 @@
-import ontology
-import knowledge
-import primitives
+import src.ontology as ontology
+import src.knowledge as knowledge
+import src.primitives as primitives
 
 class Translator:
     def __init__(self, kg : knowledge.WorldKG):

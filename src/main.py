@@ -1,11 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
-import pcg
-import knowledge
+import src.pcg as pcg
+import src.knowledge as knowledge
 from matplotlib.colors import LightSource
-from controller import Controller
-import random
+from src.controller import Controller
 
 def visualize_3d(elevation):
     # Keep good detail while maintaining rendering performance
