@@ -2,6 +2,7 @@ import networkx as nx
 from matplotlib import pyplot as plt 
 import ontology
 import json
+import sys
 
 class WorldKG:
     def __init__(self):
@@ -14,14 +15,16 @@ class WorldKG:
         for node in data["nodes"]:
             try:
                 node["entity_type"] = ontology.EntityType[node["entity_type"]]
-            except ValueError:
+            except KeyError:
                 print(f"Invalid entity type for node {node}")
+                sys.exit()
 
         for edge in data["edges"]:
             try:
                 edge["relation_type"] = ontology.RelationType[edge["relation_type"]]
-            except ValueError:
+            except KeyError:
                 print(f"Invalid relation type for edge: {edge}")
+                sys.exit()
 
         self.graph = nx.readwrite.json_graph.node_link_graph(
                         data, 

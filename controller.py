@@ -1,11 +1,13 @@
 import pcg
 import knowledge
-from translator import Translator, RegionConstraint, ProximityConstraint, ConnectionConstraint
+from translator import Translator
 from planner import Planner
-import ontology
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
+import primitives
+import sys
+from primitives import TaskType, GenerationTask
 
 class Controller:
     def __init__(self, world : pcg.World, kg : knowledge.WorldKG):
@@ -13,48 +15,24 @@ class Controller:
         self.kg = kg
         self.translator = Translator(self.kg)
 
-    def generate_terrain(self):
-        self.world.generate_terrain()
-
-    def create_biomes(self):
-        self.world.create_biomes()
-
-    def generate_rivers(self, count : int):
-        self.world.generate_rivers(count)
-
-    def spawn_entities(self):
-        dependencies = self.translator.get_dependencies()
-        spawnable_entities = self.translator.spawnable_entities
+    def execute_plan(self):
+        planner = Planner(self.translator)  
+        planner.generate_plan()
         
-        planner = Planner()  
-        planner.generate_plan(dependencies, spawnable_entities)
+        for task in planner.plan:
+            print(f"Executing: {task.task_id}")
+            
+            if task.task_type == TaskType.GENERATE_TERRAIN:
+                self.world.generate_terrain()
+            elif task.task_id == "task:biomes":
+                self.world.create_biomes()
+            elif task.task_id == "task:rivers":
+                self.world.generate_rivers()
+            elif task.task_type == TaskType.GENERATE_ENTITY:
+                self.world.spawn_entity(task.entity, task.constraints)
+            elif task.task_type == TaskType.GENERATE_CONNECTION:
+                self.world.generate_connection(task.constraints[0])
 
-        entity_constraint_map = self.translator.translate()
-
-        for entity in planner.plan:
-            constraints = entity_constraint_map[entity]
-
-            valid_mask = self.world.get_free_mask()
-            for constraint in constraints:
-                if isinstance(constraint, RegionConstraint):
-                    valid_mask &= self.world.get_region_mask(constraint)
-                elif isinstance(constraint, ProximityConstraint):
-                    valid_mask &= self.world.get_proximity_mask(constraint)
-
-            valid_indices = np.flatnonzero(valid_mask)
-
-            if valid_indices.size > 0:
-                random_idx = self.world.random_choose(valid_indices)
-                
-                row, col = np.unravel_index(random_idx, self.world.biomes.shape)
-                self.world.place_entity(entity_id= entity, entity_type= self.kg.get_entity_type(entity), location= (row, col))
-            else:
-                print(f"Warning: No valid location found for the entity {entity}!")
-
-    def create_connections(self):
-        for constraint in self.translator.connections:
-            print(f"Connecting {constraint.source} to {constraint.target}")
-            self.world.generate_connection(constraint)
 
     def display(self):
         cmap = ListedColormap([

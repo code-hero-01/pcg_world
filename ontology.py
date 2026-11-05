@@ -56,15 +56,6 @@ SPAWNABLE = {
     EntityType.MINE 
 }
 
-@dataclass
-class LOCATED_IN:
-    symmetric = False
-
-@dataclass
-class LOCATED_NEAR:
-    min_distance: int
-    max_distance: int
-    symmetric = True
 
 
 VALID_CONSTRAINTS_FROM = {

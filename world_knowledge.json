@@ -5,31 +5,31 @@
     "description": "Game world knowledge graph"
   },
   "nodes": [
-    {"id": "Ocean", "entity_type": "OCEAN"},
-    {"id": "Beach", "entity_type": "BEACH"},
-    {"id": "Desert", "entity_type": "DESERT"},
-    {"id": "Forest", "entity_type": "FOREST"},
-    {"id": "Grassland", "entity_type": "GRASSLAND"},
-    {"id": "Swamp", "entity_type": "SWAMP"},
-    {"id": "Rocky_Mountain", "entity_type": "ROCKY_MOUNTAIN"},
-    {"id": "Tundra", "entity_type": "TUNDRA"},
-    {"id": "Snowy_Mountain", "entity_type": "SNOWY_MOUNTAIN"},   
+    {"id": "Ocean", "entity_type": "OCEAN", "instance": "Class"},
+    {"id": "Beach", "entity_type": "BEACH", "instance": "Class"},
+    {"id": "Desert", "entity_type": "DESERT", "instance": "Class"},
+    {"id": "Forest", "entity_type": "FOREST", "instance": "Class"},
+    {"id": "Grassland", "entity_type": "GRASSLAND", "instance": "Class"},
+    {"id": "Swamp", "entity_type": "SWAMP", "instance": "Class"},
+    {"id": "Rocky_Mountain", "entity_type": "ROCKY_MOUNTAIN", "instance": "Class"},
+    {"id": "Tundra", "entity_type": "TUNDRA", "instance": "Class"},
+    {"id": "Snowy_Mountain", "entity_type": "SNOWY_MOUNTAIN", "instance": "Class"},   
     
-    {"id": "River", "entity_type": "RIVER"},
+    {"id": "River", "entity_type": "RIVER", "instance": "Class"},
 
-    {"id": "Village_1", "entity_type": "VILLAGE"},
-    {"id": "Village_2", "entity_type": "VILLAGE"},
-    {"id": "Village_3", "entity_type": "VILLAGE"},
-    {"id": "Village_4", "entity_type": "VILLAGE"},
+    {"id": "Village_1", "entity_type": "VILLAGE", "instance": "Unique"},
+    {"id": "Village_2", "entity_type": "VILLAGE", "instance": "Unique"},
+    {"id": "Village_3", "entity_type": "VILLAGE", "instance": "Unique"},
+    {"id": "Village_4", "entity_type": "VILLAGE", "instance": "Unique"},
 
-    {"id": "Mine_1", "entity_type": "MINE"},
-    {"id": "Mine_2", "entity_type": "MINE"},
-    {"id": "Mine_3", "entity_type": "MINE"},
+    {"id": "Mine_1", "entity_type": "MINE", "instance": "Unique"},
+    {"id": "Mine_2", "entity_type": "MINE", "instance": "Unique"},
+    {"id": "Mine_3", "entity_type": "MINE", "instance": "Unique"},
 
-    {"id": "City_1", "entity_type": "CITY"},
-    {"id": "City_2", "entity_type": "CITY"},
-    {"id": "City_3", "entity_type": "CITY"},
-    {"id": "City_4", "entity_type": "CITY"}
+    {"id": "City_1", "entity_type": "CITY", "instance": "Unique"},
+    {"id": "City_2", "entity_type": "CITY", "instance": "Unique"},
+    {"id": "City_3", "entity_type": "CITY", "instance": "Unique"},
+    {"id": "City_4", "entity_type": "CITY", "instance": "Unique"}
   ],
   
   "edges": [

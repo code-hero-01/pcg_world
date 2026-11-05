@@ -2,11 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 import pcg
-import ontology
-import translator
 import knowledge
 from matplotlib.colors import LightSource
 from controller import Controller
+import random
 
 def visualize_3d(elevation):
     # Keep good detail while maintaining rendering performance
@@ -81,12 +80,7 @@ def main():
     kg.load_graph("world_knowledge.json")
 
     controller = Controller(world, kg)
-    
-    controller.generate_terrain()
-    controller.create_biomes()
-    controller.generate_rivers(20)
-    controller.spawn_entities()
-    controller.create_connections()
+    controller.execute_plan()
 
     # plt.imshow(world.elevation, cmap="Greys")
     # plt.show()    

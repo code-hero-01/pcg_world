@@ -4,7 +4,8 @@ from dataclasses import dataclass
 from collections import deque
 import heapq
 import ontology
-import translator
+import primitives
+
 
 @dataclass
 class WorldConfig:
@@ -59,7 +60,7 @@ class World:
 
     def generate_terrain(self):
         config = self.config
-
+       
         # generate noise fields
         for y in range(self.ROWS):
             for x in range(self.COLS):
@@ -98,6 +99,8 @@ class World:
         # Pull edges down into ocean
         self.elevation = self.elevation * (1.0 - (dist_from_center ** 2))
         self.elevation = normalize(self.elevation)
+
+        print("Generated terrain")
         
     def create_biomes(self):
         conditions = [
@@ -268,7 +271,7 @@ class World:
                 
         return peaks               
 
-    def generate_rivers(self, num_rivers : int) -> list:
+    def generate_rivers(self, num_rivers : int = 15) -> list:
         river_starts = self._find_river_starts()
         if len(river_starts) > num_rivers:
             river_starts = list(self.rng.choice(river_starts, num_rivers))
@@ -284,55 +287,81 @@ class World:
             for x, y in river:
                 self.occupied[y, x] = ontology.EntityType.RIVER.value
 
-    def get_region_mask(self, constraint : translator.RegionConstraint):
+    def get_region_mask(self, constraint : primitives.RegionConstraint):
         region_mask = (self.occupied == -1)
 
-        if constraint.biome is not None:
-            region_mask &= (self.biomes == constraint.biome.value)
+        if constraint.region is not None:
+            region_mask &= (self.biomes == constraint.region.entity_type.value)
 
         return region_mask
     
-    def get_proximity_mask(self, constraint : translator.ProximityConstraint):
+    def get_proximity_mask(self, constraint : primitives.ProximityConstraint):
         proximity_mask = (self.occupied == -1)
 
-        if constraint.target not in self.distance_to:
-            if ontology.SPATIAL_TYPE_MAP[constraint.target_type] == ontology.SpatialType.POINT: 
-                self.distance_to[constraint.target] = self.calculate_distance_map(target_id= constraint.target)
+        if constraint.target.entity_id not in self.distance_to:
+            if constraint.target.instance  == "Unique":
+                self.distance_to[constraint.target.entity_id] = self.calculate_distance_map(target_id= constraint.target.entity_id)
             else:
-                self.distance_to[constraint.target] = self.calculate_distance_map(target_type= constraint.target_type)
+                self.distance_to[constraint.target.entity_id] = self.calculate_distance_map(target_type= constraint.target.entity_type)
 
         
-        proximity_mask &= (self.distance_to[constraint.target] <= constraint.max_distance) & (self.distance_to[constraint.target] >= constraint.min_distance)
+        proximity_mask &= (self.distance_to[constraint.target.entity_id] <= constraint.max_distance) & (self.distance_to[constraint.target.entity_id] >= constraint.min_distance)
 
         return proximity_mask
 
     def get_free_mask(self):
         return self.occupied == -1
+
+    def spawn_entity(self, entity: primitives.Entity, constraints: list):
+        valid_mask = self.get_free_mask()
+        
+        for constraint in constraints:
+            if isinstance(constraint, primitives.RegionConstraint):
+                valid_mask &= self.get_region_mask(constraint)
+            
+            elif isinstance(constraint, primitives.ProximityConstraint):
+                valid_mask &= self.get_proximity_mask(constraint)
+
+        valid_indices = np.flatnonzero(valid_mask)
+
+        if valid_indices.size > 0:
+            random_idx = self.random_choose(valid_indices)
+            
+            row, col = np.unravel_index(random_idx, self.biomes.shape)
+            self.place_entity(entity= entity, location= (row, col))
+        else:
+            print(f"Warning: No valid location found for the entity {entity}!")
         
 
-    def place_entity(self, entity_id : str, entity_type : ontology.EntityType, location : tuple):
-        if location is None:
-            print("Warning: No valid location found for this entity!")
-            return
-            
+    def place_entity(self, entity: primitives.Entity, location : tuple):
         row, col = location
         
         current_biome = ontology.EntityType(self.biomes[row, col])
-        print(f"Placing {entity_id} of type {entity_type.name} at row={row}, col={col}, Biome = {current_biome}")
+        print(f"Placing {entity.entity_id} of type {entity.entity_type.name} at row={row}, col={col}, Biome = {current_biome}")
         
-        self.occupied[row, col] = entity_type.value
-        self.entity_id_map[row, col] = entity_id
+        self.occupied[row, col] = entity.entity_type.value
+        self.entity_id_map[row, col] = entity.entity_id
 
 
     def random_choose(self, arr):
         return self.rng.choice(arr)
 
     def generate_connection(self, connection_constraint):  # a_star road
-        start = connection_constraint.source
-        goal = connection_constraint.target
+        start = connection_constraint.source.entity_id
+        goal = connection_constraint.target.entity_id
 
-        indices = np.where(self.entity_id_map == start)
-        start_cell = int(indices[1][0]), int(indices[0][0])
+        start_indices = np.where(self.entity_id_map == start)
+        if len(start_indices[0]) == 0:
+            print(f"Source entity {start} not found in entity_id_map")
+            return
+        
+        goal_indices = np.where(self.entity_id_map == goal)
+        if len(goal_indices[0]) == 0:
+            print(f"Goal entity {goal} not found in entity_id_map")
+            return
+
+        
+        start_cell = int(start_indices[1][0]), int(start_indices[0][0])
 
         open_set = []
         closed_set = set()
@@ -386,23 +415,23 @@ class World:
 
                 # 1. ADD TERRAIN NOISE TO MAKE THE ROADS WINDING
                 terrain_roughness = noise.pnoise2(
-                    nx / 30.0, 
-                    ny / 30.0, 
+                    nx / 50.0, 
+                    ny / 50.0, 
                     octaves=1, 
                     persistence=0.5
-                ) * 10.0 # Amplify to influence path choices
+                ) * 20.0 # Amplify to influence path choices
 
                 elevation_diff = self.elevation[ny, nx] - self.elevation[y, x]
             
                 if elevation_diff > 0:
-                    # Going uphill is heavily penalized
+                    # Going uphill is penalized
                     elevation_cost = elevation_diff * 100.0 
                 elif elevation_diff == 0:
                     # Flat ground is encouraged
                     elevation_cost = 0
                 else:
                     # Downhill movement is penalized
-                    elevation_cost = -elevation_diff * 50  
+                    elevation_cost = -elevation_diff * 150  
 
                 # Combine costs
                 exploration_cost = dist + elevation_cost + abs(terrain_roughness)
