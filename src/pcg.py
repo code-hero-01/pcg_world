@@ -328,12 +328,12 @@ class World:
             random_idx = self.random_choose(valid_indices)
             
             row, col = np.unravel_index(random_idx, self.biomes.shape)
-            self.spawn_entity(entity= entity, location= (row, col))
+            self.place_entity(entity= entity, location= (row, col))
         else:
             print(f"Warning: No valid location found for the entity {entity}!")
         
 
-    def spawn_entity(self, entity: primitives.Entity, location : tuple):
+    def place_entity(self, entity: primitives.Entity, location : tuple):
         row, col = location
         
         current_biome = ontology.EntityType(self.biomes[row, col])
