@@ -1,13 +1,13 @@
-import src.pcg as pcg
-import src.knowledge as knowledge
-from src.translator import Translator
-from src.planner import Planner
+import pcg as pcg
+import knowledge as knowledge
+from translator import Translator
+from planner import Planner
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
-import src.primitives as primitives
+import primitives as primitives
 import sys
-from src.primitives import TaskType, GenerationTask
+from primitives import TaskType, GenerationTask
 
 class Controller:
     def __init__(self, world : pcg.World, kg : knowledge.WorldKG):
@@ -20,16 +20,17 @@ class Controller:
         planner.generate_plan()
         
         for task in planner.plan:
-            print(f"Executing: {task.task_id}")
+            print(f"Executing {task.task_id}")
             
             if task.task_type == TaskType.GENERATE_TERRAIN:
                 self.world.generate_terrain()
-            elif task.task_id == "task:biomes":
-                self.world.create_biomes()
-            elif task.task_id == "task:rivers":
-                self.world.generate_rivers()
             elif task.task_type == TaskType.GENERATE_ENTITY:
-                self.world.spawn_entity(task.entity, task.constraints)
+                if task.task_id == "task:biomes":
+                    self.world.create_biomes()
+                elif task.task_id == "task:rivers":
+                    self.world.generate_rivers()
+                else:
+                    self.world.spawn_entity(task.entity, task.constraints)
             elif task.task_type == TaskType.GENERATE_CONNECTION:
                 self.world.generate_connection(task.constraints[0])
 
@@ -46,8 +47,9 @@ class Controller:
                 "#A3BAC9",
                 "white"
             ])
-    
-        plt.imshow(self.world.biomes, cmap=cmap)
+
+        biome_grid = np.array([[cell.value for cell in row] for row in self.world.biomes])
+        plt.imshow(biome_grid, cmap=cmap)
     
         for river in self.world.rivers:
             x = [point[0] for point in river]
@@ -55,7 +57,7 @@ class Controller:
     
             plt.plot(x, y, color="steelblue", linewidth=2, zorder= 2)
 
-        for road in self.world.roads:
+        for key, road in self.world.roads.items():
             x = [point[0] for point in road]
             y = [point[1] for point in road]
             
@@ -106,5 +108,5 @@ if __name__ == "__main__":
     kg.load_graph("world_knowledge.json")
 
     controller = Controller(world, kg)
-    controller.spawn_entities()
+    controller.execute_plan()
 

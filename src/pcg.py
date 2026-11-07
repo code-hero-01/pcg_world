@@ -3,8 +3,8 @@ import noise
 from dataclasses import dataclass
 from collections import deque
 import heapq
-import src.ontology as ontology
-import src.primitives as primitives
+import ontology as ontology
+import primitives as primitives
 
 
 @dataclass
@@ -32,7 +32,6 @@ class WorldConfig:
 def chebyshev_distance(loc1 : tuple, loc2 : tuple) -> int:
         return max(abs(p - q) for p, q in zip(loc1, loc2))
 
-
 class World:
     def __init__(self, config : WorldConfig, seed: int):
         self.rng = np.random.default_rng(seed)
@@ -50,13 +49,14 @@ class World:
         self.elevation = np.zeros((self.ROWS, self.COLS))
         self.moisture = np.zeros((self.ROWS, self.COLS))
         # self.flow_accumulation = np.ones((self.ROWS, self.COLS))
-        self.biomes = np.zeros((self.ROWS, self.COLS))
+        self.biomes = np.full((self.ROWS, self.COLS), None, dtype=object)
         self.distance_to = {}
-        self.occupied = np.full((self.ROWS, self.COLS), -1, dtype=np.int32)
-        self.entity_id_map = np.full((self.ROWS, self.COLS), "", dtype= object)
+        self.occupied = np.full((self.ROWS, self.COLS), None, dtype=object)
+        self.entity_id_map = np.full((self.ROWS, self.COLS), "", dtype=object)
 
+        self.entity_coords = {}
         self.rivers = []
-        self.roads = []
+        self.roads = {}
 
     def generate_terrain(self):
         config = self.config
@@ -100,7 +100,7 @@ class World:
         self.elevation = self.elevation * (1.0 - (dist_from_center ** 2))
         self.elevation = normalize(self.elevation)
 
-        print("Generated terrain")
+        print("terrain generated")
         
     def create_biomes(self):
         conditions = [
@@ -118,15 +118,15 @@ class World:
         ]
 
         choices = [
-            ontology.EntityType.OCEAN.value,
-            ontology.EntityType.BEACH.value,
-            ontology.EntityType.DESERT.value,
-            ontology.EntityType.GRASSLAND.value,
-            ontology.EntityType.FOREST.value,
-            ontology.EntityType.SWAMP.value,
-            ontology.EntityType.ROCKY_MOUNTAIN.value,
-            ontology.EntityType.TUNDRA.value,
-            ontology.EntityType.SNOWY_MOUNTAIN.value
+            ontology.EntityType.OCEAN,
+            ontology.EntityType.BEACH,
+            ontology.EntityType.DESERT,
+            ontology.EntityType.GRASSLAND,
+            ontology.EntityType.FOREST,
+            ontology.EntityType.SWAMP,
+            ontology.EntityType.ROCKY_MOUNTAIN,
+            ontology.EntityType.TUNDRA,
+            ontology.EntityType.SNOWY_MOUNTAIN,
         ]
 
         self.biomes = np.select(conditions, choices)
@@ -135,11 +135,11 @@ class World:
         if target_id is not None:
             y_indices, x_indices = np.where(self.entity_id_map == target_id)
         elif ontology.SPATIAL_TYPE_MAP.get(target_type) == ontology.SpatialType.BIOME:
-            y_indices, x_indices = np.where(self.biomes == target_type.value)
+            y_indices, x_indices = np.where(self.biomes == target_type)
         elif ontology.SPATIAL_TYPE_MAP.get(target_type) == ontology.SpatialType.FEATURE:
-            y_indices, x_indices = np.where(self.occupied == target_type.value)
+            y_indices, x_indices = np.where(self.occupied == target_type)
         elif ontology.SPATIAL_TYPE_MAP.get(target_type) == ontology.SpatialType.POINT:
-            y_indices, x_indices = np.where(self.occupied == target_type.value)
+            y_indices, x_indices = np.where(self.occupied == target_type)
 
         # multisource bfs
         distance_to_target = np.full((self.ROWS, self.COLS), -1, dtype=np.int32)
@@ -201,7 +201,7 @@ class World:
 
             closed_set.add(current)
 
-            if self.biomes[y, x] == ontology.EntityType.OCEAN.value:
+            if self.biomes[y, x] == ontology.EntityType.OCEAN:
                 path = []
                 while current in came_from:
                     path.append(current)
@@ -285,18 +285,18 @@ class World:
 
         for river in self.rivers:
             for x, y in river:
-                self.occupied[y, x] = ontology.EntityType.RIVER.value
+                self.occupied[y, x] = ontology.EntityType.RIVER
 
     def get_region_mask(self, constraint : primitives.RegionConstraint):
-        region_mask = (self.occupied == -1)
+        region_mask = (self.occupied == None)
 
         if constraint.region is not None:
-            region_mask &= (self.biomes == constraint.region.entity_type.value)
+            region_mask &= (self.biomes == constraint.region.entity_type)
 
         return region_mask
     
     def get_proximity_mask(self, constraint : primitives.ProximityConstraint):
-        proximity_mask = (self.occupied == -1)
+        proximity_mask = (self.occupied == None)
 
         if constraint.target.entity_id not in self.distance_to:
             if constraint.target.instance  == "Unique":
@@ -310,7 +310,7 @@ class World:
         return proximity_mask
 
     def get_free_mask(self):
-        return self.occupied == -1
+        return self.occupied == None
 
     def spawn_entity(self, entity: primitives.Entity, constraints: list):
         valid_mask = self.get_free_mask()
@@ -328,19 +328,20 @@ class World:
             random_idx = self.random_choose(valid_indices)
             
             row, col = np.unravel_index(random_idx, self.biomes.shape)
-            self.place_entity(entity= entity, location= (row, col))
+            self.spawn_entity(entity= entity, location= (row, col))
         else:
             print(f"Warning: No valid location found for the entity {entity}!")
         
 
-    def place_entity(self, entity: primitives.Entity, location : tuple):
+    def spawn_entity(self, entity: primitives.Entity, location : tuple):
         row, col = location
         
         current_biome = ontology.EntityType(self.biomes[row, col])
-        print(f"Placing {entity.entity_id} of type {entity.entity_type.name} at row={row}, col={col}, Biome = {current_biome}")
+        print(f"Spawned {entity.entity_id} of type {entity.entity_type.name} at row={row}, col={col}, Biome = {current_biome}")
         
-        self.occupied[row, col] = entity.entity_type.value
+        self.occupied[row, col] = entity.entity_type
         self.entity_id_map[row, col] = entity.entity_id
+        self.entity_coords[entity.entity_id] = (row, col)
 
 
     def random_choose(self, arr):
@@ -394,9 +395,11 @@ class World:
                 path.append(start_cell)
                 path.reverse()
 
-                self.roads.append(path)
+                self.roads[(start, goal)] = path
                 for x, y in path:
-                    self.occupied[y, x] = ontology.EntityType.ROAD.value
+                    self.occupied[y, x] = ontology.EntityType.ROAD
+
+                return
 
             # explore neighbours
             for dx, dy in directions:
@@ -407,7 +410,7 @@ class World:
                     continue
                 if neighbour in closed_set:
                     continue
-                if self.biomes[ny, nx] == ontology.EntityType.OCEAN.value:
+                if self.biomes[ny, nx] == ontology.EntityType.OCEAN:
                     continue
 
                 # dist = 1.414 if (abs(dx) == 1 and abs(dy) == 1) else 1.0
@@ -447,4 +450,12 @@ class World:
                     came_from[neighbour] = current
                     heapq.heappush(open_set, (f_score, neighbour))
 
+    def locate(self, entity_id: str) -> tuple[int, int]:
+        coords = np.argwhere(self.entity_id_map == entity_id)
+
+        if coords.size == 0:
+            return None
+        
+        row, col = coords[0]
+        return row, col
     

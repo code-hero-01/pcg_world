@@ -1,10 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
-import src.pcg as pcg
-import src.knowledge as knowledge
+import pcg as pcg
+import knowledge as knowledge
 from matplotlib.colors import LightSource
-from src.controller import Controller
+from controller import Controller
+from validator import WorldValidator
 
 def visualize_3d(elevation):
     # Keep good detail while maintaining rendering performance
@@ -76,7 +77,7 @@ def main():
     world = pcg.World(config, seed)
 
     kg = knowledge.WorldKG()
-    kg.load_graph("world_knowledge.json")
+    kg.load_graph("src/world_knowledge.json")
 
     controller = Controller(world, kg)
     controller.execute_plan()
@@ -89,8 +90,12 @@ def main():
 
     # visualize_3d(world.elevation)
 
+    validator = WorldValidator(world, kg)
+    print(validator.validate())
+
     controller.display()
 
     
 if __name__ == "__main__":
     main()
+

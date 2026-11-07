@@ -1,6 +1,6 @@
-import src.ontology as ontology
-import src.knowledge as knowledge
-import src.primitives as primitives
+import ontology as ontology
+import knowledge as knowledge
+import primitives as primitives
 
 class Translator:
     def __init__(self, kg : knowledge.WorldKG):
@@ -72,18 +72,6 @@ class Translator:
         )
         
         self.connections.append(connection_constraint)
-
-    def get_dependencies(self):
-        dependencies = []
-
-        for relation in self.relations:
-            if relation['relation_type'] == ontology.RelationType.LOCATED_NEAR:
-                target_spatial_type = ontology.SPATIAL_TYPE_MAP[self.kg.get_entity_type(relation['target'])]
-
-                if target_spatial_type == ontology.SpatialType.POINT:
-                    dependencies.append((relation['source'], relation['target']))
-                
-        return dependencies
 
         
 if __name__ == "__main__":

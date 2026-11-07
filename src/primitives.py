@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-import src.ontology as ontology
+import ontology as ontology
 from enum import Enum, auto
 
 @dataclass(frozen=True)
@@ -40,7 +40,7 @@ class TaskType(Enum):
 
 @dataclass(frozen=True)
 class GenerationTask:
-    task_id: tuple  
+    task_id: str  
     task_type: TaskType
 
     entity: Entity = None

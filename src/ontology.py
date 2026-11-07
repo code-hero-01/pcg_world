@@ -57,7 +57,6 @@ SPAWNABLE = {
 }
 
 
-
 VALID_CONSTRAINTS_FROM = {
     EntityType.VILLAGE : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.CONNECTS_TO},
     EntityType.CITY : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.CONNECTS_TO},
