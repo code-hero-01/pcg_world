@@ -7,7 +7,9 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 import primitives as primitives
 import sys
-from primitives import TaskType, GenerationTask
+from primitives import TaskType
+from validator import WorldValidator
+
 
 class Controller:
     def __init__(self, world : pcg.World, kg : knowledge.WorldKG):
@@ -36,28 +38,27 @@ class Controller:
 
 
     def display(self):
-        cmap = ListedColormap([
-                "#2180c0",
-                "#e2ca9c",
-                "#d1a95f",
-                "#759e16",
-                "#177a17",
-                "#255803",
-                "#915D1B",
-                "#A3BAC9",
-                "white"
-            ])
+        colors = ListedColormap([
+            "#2180c0",  # OCEAN
+            "#e2ca9c",  # BEACH
+            "#d1a95f",  # DESERT
+            "#759e16",  # GRASSLAND
+            "#177a17",  # FOREST
+            "#255803",  # SWAMP
+            "#915D1B",  # ROCKY_MOUNTAIN
+            "#A3BAC9",  # TUNDRA
+            "white"       # SNOWY_MOUNTAIN
+        ])
 
-        biome_grid = np.array([[cell.value for cell in row] for row in self.world.biomes])
-        plt.imshow(biome_grid, cmap=cmap)
+        plt.imshow(self.world.biomes, cmap=colors)
     
-        for river in self.world.rivers:
+        for river in self.world.river_coords:
             x = [point[0] for point in river]
             y = [point[1] for point in river]
     
             plt.plot(x, y, color="steelblue", linewidth=2, zorder= 2)
 
-        for key, road in self.world.roads.items():
+        for key, road in self.world.road_coords.items():
             x = [point[0] for point in road]
             y = [point[1] for point in road]
             
@@ -72,7 +73,7 @@ class Controller:
         markers = ['o', 's', '^', 'D', 'v', '*']
         i = 0
         for entity in self.translator.spawnable_entities:
-            coords = np.argwhere(self.world.entity_id_map == entity)
+            coords = np.argwhere(self.world.entities == entity)
             y_indices = coords[:, 0]
             x_indices = coords[:, 1]
 
@@ -97,6 +98,11 @@ class Controller:
         )
         
         plt.show()
+
+    def validate(self):
+        validator = WorldValidator(self.world, self.kg, self.translator.entities)
+        validator.validate()
+        validator.generate_report()
             
 
 if __name__ == "__main__":

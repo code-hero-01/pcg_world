@@ -5,7 +5,6 @@ import pcg as pcg
 import knowledge as knowledge
 from matplotlib.colors import LightSource
 from controller import Controller
-from validator import WorldValidator
 
 def visualize_3d(elevation):
     # Keep good detail while maintaining rendering performance
@@ -90,8 +89,7 @@ def main():
 
     # visualize_3d(world.elevation)
 
-    validator = WorldValidator(world, kg)
-    print(validator.validate())
+    controller.validate()
 
     controller.display()
 

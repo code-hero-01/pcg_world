@@ -49,14 +49,15 @@ class World:
         self.elevation = np.zeros((self.ROWS, self.COLS))
         self.moisture = np.zeros((self.ROWS, self.COLS))
         # self.flow_accumulation = np.ones((self.ROWS, self.COLS))
-        self.biomes = np.full((self.ROWS, self.COLS), None, dtype=object)
+        self.biomes = np.full((self.ROWS, self.COLS), -1, dtype=int)
         self.distance_to = {}
-        self.occupied = np.full((self.ROWS, self.COLS), None, dtype=object)
-        self.entity_id_map = np.full((self.ROWS, self.COLS), "", dtype=object)
+        self.rivers = np.full((self.ROWS, self.COLS), -1, dtype=int)
+        self.roads = np.full((self.ROWS, self.COLS), -1, dtype=int) 
+        self.entities = np.full((self.ROWS, self.COLS), "", dtype=object)
 
         self.entity_coords = {}
-        self.rivers = []
-        self.roads = {}
+        self.river_coords = []
+        self.road_coords = {}
 
     def generate_terrain(self):
         config = self.config
@@ -118,28 +119,35 @@ class World:
         ]
 
         choices = [
-            ontology.EntityType.OCEAN,
-            ontology.EntityType.BEACH,
-            ontology.EntityType.DESERT,
-            ontology.EntityType.GRASSLAND,
-            ontology.EntityType.FOREST,
-            ontology.EntityType.SWAMP,
-            ontology.EntityType.ROCKY_MOUNTAIN,
-            ontology.EntityType.TUNDRA,
-            ontology.EntityType.SNOWY_MOUNTAIN,
+            ontology.EntityType.OCEAN.value,
+            ontology.EntityType.BEACH.value,
+            ontology.EntityType.DESERT.value,
+            ontology.EntityType.GRASSLAND.value,
+            ontology.EntityType.FOREST.value,
+            ontology.EntityType.SWAMP.value,
+            ontology.EntityType.ROCKY_MOUNTAIN.value,
+            ontology.EntityType.TUNDRA.value,
+            ontology.EntityType.SNOWY_MOUNTAIN.value,
         ]
 
         self.biomes = np.select(conditions, choices)
 
-    def calculate_distance_map(self, target_type= None, target_id = None):
-        if target_id is not None:
-            y_indices, x_indices = np.where(self.entity_id_map == target_id)
-        elif ontology.SPATIAL_TYPE_MAP.get(target_type) == ontology.SpatialType.BIOME:
-            y_indices, x_indices = np.where(self.biomes == target_type)
-        elif ontology.SPATIAL_TYPE_MAP.get(target_type) == ontology.SpatialType.FEATURE:
-            y_indices, x_indices = np.where(self.occupied == target_type)
-        elif ontology.SPATIAL_TYPE_MAP.get(target_type) == ontology.SpatialType.POINT:
-            y_indices, x_indices = np.where(self.occupied == target_type)
+    def calculate_distance_map(self, target: primitives.Entity):
+        if target.instance == "Unique":
+            y_indices, x_indices = np.where(self.entities == target.entity_id)
+        elif ontology.SPATIAL_TYPE_MAP.get(target.entity_type) == ontology.SpatialType.BIOME:
+            y_indices, x_indices = np.where(self.biomes == target.entity_type.value)
+        elif ontology.SPATIAL_TYPE_MAP.get(target.entity_type) == ontology.SpatialType.FEATURE:
+            if target.entity_type == ontology.EntityType.RIVER:
+                y_indices, x_indices = np.where(self.rivers == target.entity_type.value)
+            elif target.entity_type == ontology.EntityType.ROAD:
+                y_indices, x_indices = np.where(self.roads == target.entity_type.value)
+        elif ontology.SPATIAL_TYPE_MAP.get(target.entity_type) == ontology.SpatialType.POINT:
+            y_indices, x_indices = np.where(self.entities != "")
+        else:
+            # Fallback catch-all to prevent UnboundLocalError
+            y_indices, x_indices = np.array([]), np.array([])
+
 
         # multisource bfs
         distance_to_target = np.full((self.ROWS, self.COLS), -1, dtype=np.int32)
@@ -176,6 +184,16 @@ class World:
 
         return distance_to_target
 
+    def find_distance(self, source_loc: tuple[int, int], target: primitives.Entity):
+        if target.instance == "Unique" and ontology.SPATIAL_TYPE_MAP.get(target.entity_type) == ontology.SpatialType.POINT:
+            target_loc = self.entity_coords.get(target.entity_id)
+            return chebyshev_distance(source_loc, target_loc)
+        
+        if target.entity_id not in self.distance_to:
+            self.distance_to[target.entity_id] = self.calculate_distance_map(target)
+
+        row, col = source_loc
+        return self.distance_to[target.entity_id][row, col]
     
     def _astar_river(self, start: tuple):
         open_set = []
@@ -201,7 +219,7 @@ class World:
 
             closed_set.add(current)
 
-            if self.biomes[y, x] == ontology.EntityType.OCEAN:
+            if self.biomes[y, x] == ontology.EntityType.OCEAN.value:
                 path = []
                 while current in came_from:
                     path.append(current)
@@ -247,12 +265,16 @@ class World:
                 # Combine costs
                 flow_cost = dist + elevation_cost + abs(terrain_roughness)
                 tentative_g = g_cost[current] + flow_cost
+                if tentative_g < 0:
+                    tentative_g = 0
  
                 if tentative_g < g_cost.get(neighbour, float('inf')):
                     g_cost[neighbour] = tentative_g
                     f_score = g_cost[neighbour] + 0.25 * self.distance_to[ontology.EntityType.OCEAN][ny, nx]   
                     came_from[neighbour] = current
-                    heapq.heappush(open_set, (f_score, neighbour))      
+                    heapq.heappush(open_set, (f_score, neighbour))     
+
+        return None # no path to ocean found 
 
     def _find_river_starts(self) -> list:
         peaks = []
@@ -260,8 +282,7 @@ class World:
         # Avoid the absolute outer edge of the map to prevent index errors
         for y in range(1, self.ROWS - 1):
             for x in range(1, self.COLS - 1):
-                # Apply your core biome condi
-                # tions first
+                # Apply your core biome conditions first
                 if self.elevation[y, x] > 0.7 and self.moisture[y, x] > 0.5:
                     # Check if this cell is strictly higher than its 3x3 neighborhood
                     neighborhood = self.elevation[y-1:y+2, x-1:x+2]
@@ -277,43 +298,42 @@ class World:
             river_starts = list(self.rng.choice(river_starts, num_rivers))
 
         if ontology.EntityType.OCEAN not in self.distance_to:
-            self.distance_to[ontology.EntityType.OCEAN] = self.calculate_distance_map(ontology.EntityType.OCEAN)
-
+            self.distance_to[ontology.EntityType.OCEAN] = self.calculate_distance_map(
+                                                                    primitives.Entity(
+                                                                        entity_id="Ocean",
+                                                                        entity_type=ontology.EntityType.OCEAN,
+                                                                        instance="Class"
+                                                                    )
+                                                                )
         for start in river_starts:
             path = self._astar_river(tuple(start))
-            self.rivers.append(path)
+            if path is not None:
+                self.river_coords.append(path)
 
-        for river in self.rivers:
+        for river in self.river_coords:
             for x, y in river:
-                self.occupied[y, x] = ontology.EntityType.RIVER
+                self.rivers[y, x] = ontology.EntityType.RIVER.value
 
     def get_region_mask(self, constraint : primitives.RegionConstraint):
-        region_mask = (self.occupied == None)
+        region_mask = (self.entities == "") & (self.rivers == -1) & (self.roads == -1)
 
         if constraint.region is not None:
-            region_mask &= (self.biomes == constraint.region.entity_type)
+            region_mask &= (self.biomes == constraint.region.entity_type.value)
 
         return region_mask
     
     def get_proximity_mask(self, constraint : primitives.ProximityConstraint):
-        proximity_mask = (self.occupied == None)
+        proximity_mask = (self.entities == "") & (self.rivers == -1) & (self.roads == -1)
 
         if constraint.target.entity_id not in self.distance_to:
-            if constraint.target.instance  == "Unique":
-                self.distance_to[constraint.target.entity_id] = self.calculate_distance_map(target_id= constraint.target.entity_id)
-            else:
-                self.distance_to[constraint.target.entity_id] = self.calculate_distance_map(target_type= constraint.target.entity_type)
-
+            self.distance_to[constraint.target.entity_id] = self.calculate_distance_map(constraint.target)
         
         proximity_mask &= (self.distance_to[constraint.target.entity_id] <= constraint.max_distance) & (self.distance_to[constraint.target.entity_id] >= constraint.min_distance)
-
         return proximity_mask
 
-    def get_free_mask(self):
-        return self.occupied == None
 
     def spawn_entity(self, entity: primitives.Entity, constraints: list):
-        valid_mask = self.get_free_mask()
+        valid_mask = (self.entities == "") & (self.rivers == -1) & (self.roads == -1)
         
         for constraint in constraints:
             if isinstance(constraint, primitives.RegionConstraint):
@@ -339,8 +359,7 @@ class World:
         current_biome = ontology.EntityType(self.biomes[row, col])
         print(f"Spawned {entity.entity_id} of type {entity.entity_type.name} at row={row}, col={col}, Biome = {current_biome}")
         
-        self.occupied[row, col] = entity.entity_type
-        self.entity_id_map[row, col] = entity.entity_id
+        self.entities[row, col] = entity.entity_id
         self.entity_coords[entity.entity_id] = (row, col)
 
 
@@ -351,12 +370,12 @@ class World:
         start = connection_constraint.source.entity_id
         goal = connection_constraint.target.entity_id
 
-        start_indices = np.where(self.entity_id_map == start)
+        start_indices = np.where(self.entities == start)
         if len(start_indices[0]) == 0:
             print(f"Source entity {start} not found in entity_id_map")
             return
         
-        goal_indices = np.where(self.entity_id_map == goal)
+        goal_indices = np.where(self.entities == goal)
         if len(goal_indices[0]) == 0:
             print(f"Goal entity {goal} not found in entity_id_map")
             return
@@ -387,7 +406,7 @@ class World:
 
             closed_set.add(current)
 
-            if self.entity_id_map[y, x] == goal:
+            if self.entities[y, x] == goal:
                 path = []
                 while current in came_from:
                     path.append(current)
@@ -395,9 +414,9 @@ class World:
                 path.append(start_cell)
                 path.reverse()
 
-                self.roads[(start, goal)] = path
+                self.road_coords[(start, goal)] = path
                 for x, y in path:
-                    self.occupied[y, x] = ontology.EntityType.ROAD
+                    self.roads[y, x] = ontology.EntityType.ROAD.value
 
                 return
 
@@ -410,7 +429,7 @@ class World:
                     continue
                 if neighbour in closed_set:
                     continue
-                if self.biomes[ny, nx] == ontology.EntityType.OCEAN:
+                if self.biomes[ny, nx] == ontology.EntityType.OCEAN.value:
                     continue
 
                 # dist = 1.414 if (abs(dx) == 1 and abs(dy) == 1) else 1.0
@@ -444,14 +463,14 @@ class World:
                     g_cost[neighbour] = tentative_g
 
                     if goal not in self.distance_to:
-                        self.distance_to[goal] = self.calculate_distance_map(target_id= goal)
+                        self.distance_to[goal] = self.calculate_distance_map(connection_constraint.target)
 
                     f_score = g_cost[neighbour] + 0.25 * self.distance_to[goal][ny, nx]   
                     came_from[neighbour] = current
                     heapq.heappush(open_set, (f_score, neighbour))
 
     def locate(self, entity_id: str) -> tuple[int, int]:
-        coords = np.argwhere(self.entity_id_map == entity_id)
+        coords = np.argwhere(self.entities == entity_id)
 
         if coords.size == 0:
             return None
