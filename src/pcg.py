@@ -10,7 +10,7 @@ import primitives as primitives
 @dataclass
 class WorldConfig:
     width: int
-    length: int
+    height: int
 
     continent_scale: float = 300
     continent_octaves: int = 2
@@ -41,7 +41,7 @@ class World:
         self.detail_offset = (self.rng.uniform(0, 1000), self.rng.uniform(0,1000))
         self.moisture_offset = (self.rng.uniform(0, 1000), self.rng.uniform(0,1000))
 
-        self.ROWS = self.config.length
+        self.ROWS = self.config.height
         self.COLS = self.config.width
 
         self.continent = np.zeros((self.ROWS, self.COLS))
@@ -101,7 +101,7 @@ class World:
         self.elevation = self.elevation * (1.0 - (dist_from_center ** 2))
         self.elevation = normalize(self.elevation)
 
-        print("terrain generated")
+        print("Generated terrain...")
         
     def create_biomes(self):
         conditions = [
@@ -131,6 +131,8 @@ class World:
         ]
 
         self.biomes = np.select(conditions, choices)
+
+        print("Created biomes...")
 
     def calculate_distance_map(self, target: primitives.Entity):
         if target.instance == "Unique":

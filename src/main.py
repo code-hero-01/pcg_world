@@ -71,7 +71,7 @@ def visualize_3d(elevation):
 def main():
     # seed = random.randint(0, 1000)
     seed = 42
-    config = pcg.WorldConfig(length = 512, width = 512)
+    config = pcg.WorldConfig(height = 512, width = 512)
 
     world = pcg.World(config, seed)
 

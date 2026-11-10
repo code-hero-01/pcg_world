@@ -107,7 +107,7 @@ class Controller:
 
 if __name__ == "__main__":
     seed = 42
-    config = pcg.WorldConfig(length = 1000, width = 1000)    
+    config = pcg.WorldConfig(height = 1000, width = 1000)    
     world = pcg.World(config, seed)
 
     kg = knowledge.WorldKG()
