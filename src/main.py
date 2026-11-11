@@ -76,7 +76,7 @@ def main():
     world = pcg.World(config, seed)
 
     kg = knowledge.WorldKG()
-    kg.load_graph("src/world_knowledge.json")
+    kg.load_graph("data/world_knowledge.json")
 
     controller = Controller(world, kg)
     controller.execute_plan()

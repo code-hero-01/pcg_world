@@ -44,10 +44,10 @@ class World:
         self.ROWS = self.config.height
         self.COLS = self.config.width
 
-        self.continent = np.zeros((self.ROWS, self.COLS))
-        self.detail = np.zeros((self.ROWS, self.COLS))
-        self.elevation = np.zeros((self.ROWS, self.COLS))
-        self.moisture = np.zeros((self.ROWS, self.COLS))
+        self.continent = np.zeros((self.ROWS, self.COLS), dtype=np.float32)
+        self.detail = np.zeros((self.ROWS, self.COLS), dtype=np.float32)
+        self.elevation = np.zeros((self.ROWS, self.COLS), dtype=np.float32)
+        self.moisture = np.zeros((self.ROWS, self.COLS), dtype=np.float32)
         # self.flow_accumulation = np.ones((self.ROWS, self.COLS))
         self.biomes = np.full((self.ROWS, self.COLS), -1, dtype=int)
         self.distance_to = {}
@@ -315,6 +315,8 @@ class World:
         for river in self.river_coords:
             for x, y in river:
                 self.rivers[y, x] = ontology.EntityType.RIVER.value
+
+        print(f"Generated {num_rivers} rivers...")
 
     def get_region_mask(self, constraint : primitives.RegionConstraint):
         region_mask = (self.entities == "") & (self.rivers == -1) & (self.roads == -1)

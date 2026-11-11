@@ -30,12 +30,10 @@ def app():
     config = WorldConfig(height=world_height, width=world_width)
     world = World(config=config, seed=seed)
 
-    world.generate_terrain()
-    world.create_biomes()
     renderer = WorldRenderer(world)
-    renderer.create_biomes_texture()
+    renderer.render_world()
 
-    def _generate(sender, app_data):
+    def _on_generate(sender, app_data):
         nonlocal world
 
         seed = dpg.get_value("seed")
@@ -48,11 +46,21 @@ def app():
 
         world.generate_terrain()
         world.create_biomes()
+        world.generate_rivers(5)
 
         renderer.world = world
 
         # recreate the displayed image
-        renderer.recreate_biomes_texture()
+        renderer.render_world()
+
+    def _on_base_map_change(sender, app_data):
+        if (dpg.does_item_exist("base_layer_widget")):
+            dpg.configure_item("base_layer_widget", texture_tag=f"tex_{app_data}")
+
+    def _on_overlay_layer_change(sender, app_data, user_data):
+        layer = user_data
+        if (dpg.does_item_exist(f"img_{layer}")):
+            dpg.configure_item(f"img_{layer}", show=app_data)
  
     with dpg.window(label="WorldGen Studio", tag="primary_window"):
         # top bar
@@ -65,16 +73,14 @@ def app():
                 # large central panel - world view
                 with dpg.group(horizontal=True):
                     dpg.add_text("World")
-                    dpg.add_button(label="Generate", callback=_generate)
+                    dpg.add_button(label="Generate", callback=_on_generate)
 
                 dpg.add_separator()
                 dpg.add_spacer(height=5)
 
-                with dpg.child_window(border=False, width=-1, height=-1, label="world_image"):
-                    dpg.add_image(
-                        texture_tag="biomes_texture", 
-                        tag="biomes_image_widget",
-                    )
+                with dpg.child_window(border=False, width=-1, height=-1, label="world_viewer"):
+                    with dpg.drawlist(width=512, height=512, tag="world_drawlist"):
+                        pass
                 
             # right panel - settings
             with dpg.child_window(width=0, height=-200, label="Settings"):
@@ -101,12 +107,25 @@ def app():
                 dpg.add_spacer(height=5)
 
                 dpg.add_text("Rendering")
-                dpg.add_checkbox(label="Terrain", default_value=True)
-                dpg.add_checkbox(label="Moisture", default_value=True)
-                dpg.add_checkbox(label="Biomes", default_value=True)
-                dpg.add_checkbox(label="Rivers", default_value=True)
-                dpg.add_checkbox(label="Roads", default_value=True)
-                dpg.add_checkbox(label="Entities", default_value=True)
+
+                dpg.add_separator()
+                dpg.add_spacer(height=5)
+
+                dpg.add_text("Base map")
+                dpg.add_radio_button(
+                    items=["Biomes", "Terrain", "Moisture"],
+                    default_value="Biomes",
+                    tag="base_layer_radio",
+                    callback=_on_base_map_change
+                )
+
+                dpg.add_separator()
+                dpg.add_spacer(height=5)
+
+                dpg.add_text("Overlay layers")
+                dpg.add_checkbox(label="Rivers", default_value=True, callback=_on_overlay_layer_change, user_data="Rivers", tag="check_Rivers")
+                dpg.add_checkbox(label="Entities", default_value=True, callback=_on_overlay_layer_change, user_data="Entities", tag="check_Entities")
+                dpg.add_checkbox(label="Roads", default_value=True, callback=_on_overlay_layer_change, user_data="Roads", tag="check_Roads")
 
         # bottom bar - terminal
         with dpg.child_window(width=0, height=0, label="terminal_panel"):
@@ -118,7 +137,7 @@ def app():
 
                 with dpg.tab(label="Results"):
                     dpg.add_text("Validation results will appear here.")
-
+                    
     dpg.set_primary_window("primary_window", True)
 
     dpg.setup_dearpygui()
