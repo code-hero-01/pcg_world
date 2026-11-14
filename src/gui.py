@@ -2,6 +2,8 @@ import dearpygui.dearpygui as dpg
 import dearpygui.demo as demo
 from renderer import WorldRenderer
 from pcg import World, WorldConfig
+from controller import Controller
+from knowledge import WorldKG
 
 def demo_app():
     dpg.create_context()
@@ -30,6 +32,11 @@ def app():
     config = WorldConfig(height=world_height, width=world_width)
     world = World(config=config, seed=seed)
 
+    kg = WorldKG()
+    kg.load_graph("data/world_knowledge.json")
+    
+    controller = Controller(world, kg)
+
     renderer = WorldRenderer(world)
     renderer.render_world()
 
@@ -41,14 +48,12 @@ def app():
         height = dpg.get_value("height")
     
         config = WorldConfig(width=width, height=height)
-
         world = World(config=config, seed=seed)
+        controller.world = world
 
-        world.generate_terrain()
-        world.create_biomes()
-        world.generate_rivers(5)
+        controller.execute_plan()
 
-        renderer.world = world
+        renderer.world = controller.world
 
         # recreate the displayed image
         renderer.render_world()
@@ -79,8 +84,9 @@ def app():
                 dpg.add_spacer(height=5)
 
                 with dpg.child_window(border=False, width=-1, height=-1, label="world_viewer"):
-                    with dpg.drawlist(width=512, height=512, tag="world_drawlist"):
-                        pass
+                    with dpg.plot(width=512, height=512, tag="world_plot", equal_aspects=True):
+                        dpg.add_plot_axis(dpg.mvXAxis, tag="world_x_axis")
+                        dpg.add_plot_axis(dpg.mvYAxis, tag="world_y_axis", invert=True)
                 
             # right panel - settings
             with dpg.child_window(width=0, height=-200, label="Settings"):

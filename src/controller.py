@@ -1,24 +1,24 @@
-import pcg as pcg
-import knowledge as knowledge
+from pcg import World, WorldConfig
+from knowledge import WorldKG
 from translator import Translator
 from planner import Planner
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 import primitives as primitives
-import sys
 from primitives import TaskType
 from validator import WorldValidator
 
 
 class Controller:
-    def __init__(self, world : pcg.World, kg : knowledge.WorldKG):
+    def __init__(self, world : World, kg : WorldKG):
         self.world = world
         self.kg = kg
         self.translator = Translator(self.kg)
 
-    def execute_plan(self):
+    def execute_plan(self) -> World:
         planner = Planner(self.translator)  
+        self.translator.translate()
         planner.generate_plan()
         
         for task in planner.plan:
@@ -36,6 +36,7 @@ class Controller:
             elif task.task_type == TaskType.GENERATE_CONNECTION:
                 self.world.generate_connection(task.constraints[0])
 
+        return self.world
 
     def display(self):
         colors = ListedColormap([
@@ -52,7 +53,7 @@ class Controller:
 
         plt.imshow(self.world.biomes, cmap=colors)
     
-        for river in self.world.river_coords:
+        for river in self.world.rivers_paths:
             x = [point[0] for point in river]
             y = [point[1] for point in river]
     
@@ -107,11 +108,11 @@ class Controller:
 
 if __name__ == "__main__":
     seed = 42
-    config = pcg.WorldConfig(height = 1000, width = 1000)    
-    world = pcg.World(config, seed)
+    config = WorldConfig(height = 1000, width = 1000)    
+    world = World(config, seed)
 
-    kg = knowledge.WorldKG()
-    kg.load_graph("world_knowledge.json")
+    kg = WorldKG()
+    kg.load_graph("data/world_knowledge.json")
 
     controller = Controller(world, kg)
     controller.execute_plan()

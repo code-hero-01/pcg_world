@@ -55,7 +55,7 @@ class WorldValidator:
     def validate_located_in(self, source, target):
         relation = ontology.RelationType.LOCATED_IN.name
         expected_value = target
-        coords = self.world.entity_coords.get(source)
+        coords = self.world.entities_info.get(source)
         if coords is None:
             actual_value = None
         else:
@@ -84,7 +84,7 @@ class WorldValidator:
     def validate_located_near(self, source, target, properties):
         relation = ontology.RelationType.LOCATED_NEAR.name
         expected_value = (properties['min_distance'], properties['max_distance'])
-        source_loc = self.world.entity_coords.get(source)
+        source_loc = self.world.entities_info.get(source)
         
         if source_loc is None:
             status = ValidationStatus.ERROR
@@ -114,8 +114,8 @@ class WorldValidator:
 
     def validate_connects_to(self, source, target):
         relation = ontology.RelationType.CONNECTS_TO.name
-        source_loc = self.world.entity_coords.get(source)
-        target_loc = self.world.entity_coords.get(target)
+        source_loc = self.world.entities_info.get(source)
+        target_loc = self.world.entities_info.get(target)
         expected_value = "Road connecting source and target"
 
         if (source_loc is None or target_loc is None):

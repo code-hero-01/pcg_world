@@ -1,6 +1,8 @@
 from pcg import World, WorldConfig
 import dearpygui.dearpygui as dpg
 import numpy as np
+from ontology import EntityType
+from PIL import Image
 
 class WorldRenderer:
     BIOME_COLORS = {
@@ -15,25 +17,28 @@ class WorldRenderer:
         9: "#FFFFFF",  # SNOWY_MOUNTAIN
     }
 
-    RIVER_COLOR = "#4682B4"
+    RIVER_COLOR = "#2180c0"
     ROAD_COLOR = "#edd4a5"
+
+    SPRITES = {
+        EntityType.CITY: "assets/city.png",
+        EntityType.VILLAGE: "assets/village.png",
+        EntityType.MINE: "assets/mine.png",
+    }
 
     def __init__(self, world: World):
         self.world = world
         self.texture_tag = "texture_tag"
 
         self.base_layers = ["Biomes", "Terrain", "Moisture"]
-        self.overlay_layers = ["Rivers", "Roads"]
+        self.overlay_layers = ["Rivers", "Roads", "Entities"]
 
         self.biomes_tex_tag = "tex_Biomes"
         self.terrain_tex_tag = "tex_Terrain"
         self.moisture_tex_tag = "tex_Moisture"
         self.rivers_tex_tag = "tex_Rivers"
+        self.entities_tex_tag = "tex_Entities"
         self.roads_tex_tag = "tex_Roads"
-
-        height, width = self.world.config.height, self.world.config.width
-        self.base_layer = np.zeros((height, width, 4), dtype=np.float32)
-        self.base_layer = (0.15, 0.15, 0.15, 1.0)
 
 
     def _hex_to_rgb(self, hex_color: str)->tuple:
@@ -80,21 +85,84 @@ class WorldRenderer:
 
     def _get_rivers_texture(self) -> list:
         rgba = np.zeros((self.world.config.height, self.world.config.width, 4), dtype=np.float32)
+        
         rgb = self._hex_to_rgb(self.RIVER_COLOR)
         mask = self.world.rivers != -1
         rgba[mask] = (*rgb, 1.0)
 
+        rgba[~mask, :3] = rgb
+
         return rgba.ravel().tolist()
+
+    def _get_entities_texture(self) -> list:
+        width = self.world.config.width
+        height = self.world.config.height
+        
+
+        sprite_cache = {}
+        # transparent canvass
+        canvas = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+
+        for entity_id, info in self.world.entities_info.items():
+            y, x = info['coords']
+            entity_type = info['entity_type']
+
+            if entity_type not in sprite_cache:
+                sprite_path = self.SPRITES.get(entity_type)
+                if sprite_path is None:
+                    continue
+                img = Image.open(sprite_path).convert("RGBA")
+                # img = img.resize((sprite_width, sprite_height), Image.Resampling.LANCZOS)
+                
+                # Flip vertically 
+                img = img.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
+                
+                sprite_cache[entity_type] = img
+
+            sprite = sprite_cache[entity_type]
+
+            sprite_width, sprite_height = sprite.size
+
+            # Centre sprite on its world coordinate.
+            left = int(x - sprite_width / 2)
+            top = int(y - sprite_height / 2)
+
+            # Clip sprites that extend beyond world boundaries.
+            x1 = max(0, left)
+            y1 = max(0, top)
+            x2 = min(width, left + sprite_width)
+            y2 = min(height, top + sprite_height)
+
+            if x1 >= x2 or y1 >= y2:
+                continue
+
+            cropped = sprite.crop((
+                x1 - left,
+                y1 - top,
+                x2 - left,
+                y2 - top
+            ))
+
+            canvas.alpha_composite(cropped, (x1, y1))
+
+        rgba = np.asarray(canvas, dtype=np.float32) / 255.0
+        return rgba.ravel().tolist()     
 
     def _get_roads_texture(self) -> list:
         rgba = np.zeros((self.world.config.height, self.world.config.width, 4), dtype=np.float32)
+        
         rgb = self._hex_to_rgb(self.ROAD_COLOR)
         mask = self.world.roads != -1
         rgba[mask] = (*rgb, 1.0)
 
+        rgba[~mask, :3] = rgb
+
         return rgba.ravel().tolist()
 
     def render_world(self):
+        if (dpg.does_item_exist("world_y_axis")):
+            dpg.delete_item("world_y_axis", children_only=True)
+
         # delete existing textures
         if (dpg.does_item_exist("world_tex_registry")):
             dpg.delete_item("world_tex_registry")
@@ -112,6 +180,8 @@ class WorldRenderer:
         textures[self.terrain_tex_tag] = self._get_terrain_texture()
         textures[self.moisture_tex_tag] = self._get_moisture_texture()
         textures[self.rivers_tex_tag] = self._get_rivers_texture()
+        textures[self.entities_tex_tag] = self._get_entities_texture()
+        textures[self.roads_tex_tag] = self._get_roads_texture()
 
         width = self.world.config.width
         height = self.world.config.height
@@ -125,43 +195,40 @@ class WorldRenderer:
                     tag=tex_tag
                 )
 
-        if dpg.does_item_exist("world_drawlist"):
+        if dpg.does_item_exist("world_plot"):
             dpg.configure_item(
-                "world_drawlist",
+                "world_plot",
                 width=self.world.config.width, 
                 height=self.world.config.height
             )
                     
             active_base = dpg.get_value("base_layer_radio")
             if not dpg.does_item_exist("base_layer_widget"):
-                dpg.draw_image(
+                dpg.add_image_series(
                     tag="base_layer_widget",
                     texture_tag=f"tex_{active_base}",
-                    pmin=(0, 0),
-                    pmax=(width, height),
-                    parent="world_drawlist"
+                    bounds_min=(0, 0),
+                    bounds_max=(width, height),
+                    parent="world_y_axis"
                 )
 
                 for name in self.overlay_layers:
-                    dpg.draw_image(
+                    dpg.add_image_series(
                         f"tex_{name}",
-                        pmin=(0, 0),
-                        pmax=(width, height),
+                        bounds_min=(0, 0),
+                        bounds_max=(width, height),
                         tag=f"img_{name}",
                         show=dpg.get_value(f"check_{name}"),
-                        parent="world_drawlist"
+                        parent="world_y_axis"
                     )
-            else:
-                dpg.configure_item(
-                    "base_layer_widget",
-                    pmax=(self.world.config.width, self.world.config.height),
-                    texture_tag=f"tex_{active_base}"
-                )
 
-                for name in self.overlay_layers:
-                    print(name)
-                    dpg.configure_item(f"img_{name}", texture_tag=f"tex_{name}", pmax=(width, height))
-  
-    # def update_overlay_layers(self):
-    #     # pixel_data = self.render_base_map().ravel().tolist()
-    #     # dpg.set_value(self.texture_tag, pixel_data)
+                dpg.set_axis_limits("world_x_axis", 0, width)
+                dpg.set_axis_limits("world_y_axis", 0, height)
+
+                # Release the lock on the NEXT frame so zoom and pan work immediately
+                def _unlock_axes():
+                    dpg.set_axis_limits_auto("world_x_axis")
+                    dpg.set_axis_limits_auto("world_y_axis")
+
+                dpg.set_frame_callback(dpg.get_frame_count() + 1, callback=_unlock_axes)
+
