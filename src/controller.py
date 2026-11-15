@@ -14,14 +14,17 @@ class Controller:
     def __init__(self, world : World, kg : WorldKG):
         self.world = world
         self.kg = kg
-        self.translator = Translator(self.kg)
 
     def execute_plan(self) -> World:
-        planner = Planner(self.translator)  
-        self.translator.translate()
+        translator = Translator(self.kg)
+        translator.translate()
+
+        planner = Planner(translator)  
         planner.generate_plan()
+
+        self.plan = planner.plan
         
-        for task in planner.plan:
+        for task in self.plan:
             print(f"Executing {task.task_id}")
             
             if task.task_type == TaskType.GENERATE_TERRAIN:
@@ -36,6 +39,7 @@ class Controller:
             elif task.task_type == TaskType.GENERATE_CONNECTION:
                 self.world.generate_connection(task.constraints[0])
 
+        print("Generation complete")
         return self.world
 
     def display(self):

@@ -29,7 +29,8 @@ class WorldKG:
         self.graph = nx.readwrite.json_graph.node_link_graph(
                         data, 
                         directed=True, 
-                        multigraph=True
+                        multigraph=True,
+                        key="relation_type"
                     )
         
             
@@ -48,7 +49,7 @@ class WorldKG:
             relation = {
                 "source": source,
                 "target": target,
-                "relation_type": data["relation_type"],
+                "relation_type": key,
                 "properties": {
                     k: v for k, v in data.items()
                     if k != "relation_type"
@@ -63,7 +64,7 @@ class WorldKG:
         return [
             node 
             for node, data in self.graph.nodes(data=True) 
-            if data.get('type') == entity_type
+            if data.get('entity_type') == entity_type
         ]
 
     def get_neighbours(self, entity):
@@ -75,17 +76,17 @@ class WorldKG:
         for source, target, key, data in self.graph.out_edges(
             entity, keys=True, data=True
         ):
-                relatiion = {
+                relation = {
                     "source": source,
                     "target": target,
-                    "relation_type": data["relation_type"],
+                    "relation_type": key,
                     "properties": {
                         k: v for k, v in data.items()
                         if k != "relation_type"
                     }
                 }
 
-                relations.append(relatiion)
+                relations.append(relation)
 
         return relations
 
@@ -104,7 +105,7 @@ class WorldKG:
         )
 
         # draw edge labels (relationship names)
-        edge_labels = nx.get_edge_attributes(self.graph, 'relation')
+        edge_labels = nx.get_edge_attributes(self.graph, 'relation_type')
         nx.draw_networkx_edge_labels(self.graph, pos, edge_labels=edge_labels, font_color='red', font_size=8)
 
         plt.title("Entity Constraint Knowledge Graph")

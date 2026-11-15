@@ -4,6 +4,7 @@ from renderer import WorldRenderer
 from pcg import World, WorldConfig
 from controller import Controller
 from knowledge import WorldKG
+from kg_editor import KG_Editor
 
 def demo_app():
     dpg.create_context()
@@ -22,8 +23,8 @@ def app():
 
     dpg.create_viewport(
         title="WorldGen Studio",
-        width=1100,
-        height=750
+        width=1000,
+        height=800
     )
 
     seed = 42
@@ -39,6 +40,8 @@ def app():
 
     renderer = WorldRenderer(world)
     renderer.render_world()
+
+    kg_editor = KG_Editor(kg)
 
     def _on_generate(sender, app_data):
         nonlocal world
@@ -66,8 +69,17 @@ def app():
         layer = user_data
         if (dpg.does_item_exist(f"img_{layer}")):
             dpg.configure_item(f"img_{layer}", show=app_data)
+
+    def _open_kg_editor():
+        dpg.show_item("kg_editor_window")
+        kg_editor.display_graph()
  
-    with dpg.window(label="WorldGen Studio", tag="primary_window"):
+    with dpg.window(
+        label="WorldGen Studio", 
+        tag="primary_window",
+        width=800,
+        height=800
+    ):
         # top bar
         with dpg.group(horizontal=True, label="top_bar"):
             dpg.add_text("Procedural World Generation Studio")
@@ -79,6 +91,7 @@ def app():
                 with dpg.group(horizontal=True):
                     dpg.add_text("World")
                     dpg.add_button(label="Generate", callback=_on_generate)
+                    dpg.add_button(label="Knowledge Graph", callback=_open_kg_editor)
 
                 dpg.add_separator()
                 dpg.add_spacer(height=5)
@@ -143,7 +156,55 @@ def app():
 
                 with dpg.tab(label="Results"):
                     dpg.add_text("Validation results will appear here.")
-                    
+
+    
+    with dpg.window(
+        label="Knowledge Graph Editor",
+        tag="kg_editor_window",
+        width=800,
+        height=700,
+        show=False
+    ):
+        # to pbar
+        with dpg.group(horizontal=True):
+            dpg.add_text("Knowledge Graph")
+            dpg.add_button(label="Clear", callback=kg_editor.clear_graph)
+            dpg.add_button(label="Load", callback=lambda: dpg.show_item("file_dialog"))
+            dpg.add_button(label="Save", callback=kg_editor.save_graph)
+        
+        # main panel - graph editor
+        with dpg.node_editor(
+            callback=kg_editor.link_callback, 
+            delink_callback=kg_editor.delink_callback, 
+            tag="kg_editor",
+            minimap=True,
+            minimap_location=dpg.mvNodeMiniMap_Location_BottomRight
+        ):
+            pass
+
+    with dpg.file_dialog(
+        directory_selector=False, 
+        show=False, 
+        callback=kg_editor.load_graph, 
+        id="file_dialog", 
+        width=700, 
+        height=400
+    ):
+        dpg.add_file_extension(".json")
+
+
+    with dpg.window(
+        label="Enter Relation Attributes",
+        modal=True,
+        show=False,
+        tag="attributes_input_dialog",
+        no_resize=True,
+        width=300,
+        height=150,
+        pos=[150, 150]
+    ):
+        pass
+
     dpg.set_primary_window("primary_window", True)
 
     dpg.setup_dearpygui()

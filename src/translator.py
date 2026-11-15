@@ -1,4 +1,4 @@
-import ontology as ontology
+import ontology
 import knowledge as knowledge
 import primitives as primitives
 
