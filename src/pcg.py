@@ -51,7 +51,7 @@ class World:
 
         self.ridged_noise = np.zeros((self.ROWS, self.COLS), dtype=np.float32)
         # self.flow_accumulation = np.ones((self.ROWS, self.COLS))
-        self.biomes = np.full((self.ROWS, self.COLS), -1, dtype=int)
+        self.biomes = np.zeros((self.ROWS, self.COLS), dtype=int)
         self.distance_to = {}
         self.rivers = np.full((self.ROWS, self.COLS), -1, dtype=int)
         self.roads = np.full((self.ROWS, self.COLS), -1, dtype=int) 

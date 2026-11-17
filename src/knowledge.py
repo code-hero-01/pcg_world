@@ -105,14 +105,42 @@ class WorldKG:
         )
 
         # draw edge labels (relationship names)
-        edge_labels = nx.get_edge_attributes(self.graph, 'relation_type')
-        nx.draw_networkx_edge_labels(self.graph, pos, edge_labels=edge_labels, font_color='red', font_size=8)
+        edge_labels = {}
+        for u, v, key in self.graph.edges(keys=True):
+            if (u, v) in edge_labels:
+                # Combine labels if multiple edges exist between the same two nodes
+                edge_labels[(u, v)] += f", {key.name}"
+            else:
+                edge_labels[(u, v)] = str(key.name)
+
+        nx.draw_networkx_edge_labels(
+            self.graph, pos, 
+            edge_labels=edge_labels, 
+            font_color='red', 
+            font_size=8
+        )
 
         plt.title("Entity Constraint Knowledge Graph")
         plt.show()
 
+    def save_graph(self, filepath: str):
+        data = nx.node_link_data(self.graph, key='relation_type')
+        
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(
+                data,
+                f, 
+                indent=4, 
+                default=
+                    lambda o: 
+                    o.name 
+                    if isinstance(o, ontology.RelationType) or isinstance(o, ontology.EntityType) 
+                    else o
+                )
+            
 
 if __name__ == "__main__":
     kg = WorldKG()
-    kg.load_graph("world_knowledge.json")
-    kg.visualize()  
+    kg.load_graph("data/world_knowledge.json")
+    kg.visualize()
+    kg.save_graph("kg2.json")  

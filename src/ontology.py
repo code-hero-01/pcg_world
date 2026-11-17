@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 class EntityType(Enum):
     # biomes
+    UNKOWN = 0
     OCEAN = auto()
     BEACH = auto()
     DESERT = auto()

@@ -1,0 +1,128 @@
+{
+    "directed": true,
+    "multigraph": true,
+    "graph": {
+        "description": "Game world knowledge graph"
+    },
+    "nodes": [
+        {
+            "entity_type": "OCEAN",
+            "instance": "Class",
+            "id": "Ocean"
+        },
+        {
+            "entity_type": "BEACH",
+            "instance": "Class",
+            "id": "Beach"
+        },
+        {
+            "entity_type": "DESERT",
+            "instance": "Class",
+            "id": "Desert"
+        },
+        {
+            "entity_type": "FOREST",
+            "instance": "Class",
+            "id": "Forest"
+        },
+        {
+            "entity_type": "GRASSLAND",
+            "instance": "Class",
+            "id": "Grassland"
+        },
+        {
+            "entity_type": "SWAMP",
+            "instance": "Class",
+            "id": "Swamp"
+        },
+        {
+            "entity_type": "ROCKY_MOUNTAIN",
+            "instance": "Class",
+            "id": "Rocky_Mountain"
+        },
+        {
+            "entity_type": "TUNDRA",
+            "instance": "Class",
+            "id": "Tundra"
+        },
+        {
+            "entity_type": "SNOWY_MOUNTAIN",
+            "instance": "Class",
+            "id": "Snowy_Mountain"
+        },
+        {
+            "entity_type": "RIVER",
+            "instance": "Class",
+            "id": "River"
+        },
+        {
+            "entity_type": "VILLAGE",
+            "instance": "Unique",
+            "id": "Village_1"
+        },
+        {
+            "entity_type": "VILLAGE",
+            "instance": "Unique",
+            "id": "Village_2"
+        },
+        {
+            "entity_type": "VILLAGE",
+            "instance": "Unique",
+            "id": "Village_3"
+        },
+        {
+            "entity_type": "VILLAGE",
+            "instance": "Unique",
+            "id": "Village_4"
+        },
+        {
+            "entity_type": "MINE",
+            "instance": "Unique",
+            "id": "Mine_1"
+        },
+        {
+            "entity_type": "MINE",
+            "instance": "Unique",
+            "id": "Mine_2"
+        },
+        {
+            "entity_type": "MINE",
+            "instance": "Unique",
+            "id": "Mine_3"
+        },
+        {
+            "entity_type": "CITY",
+            "instance": "Unique",
+            "id": "City_1"
+        },
+        {
+            "entity_type": "CITY",
+            "instance": "Unique",
+            "id": "City_2"
+        },
+        {
+            "entity_type": "CITY",
+            "instance": "Unique",
+            "id": "City_3"
+        },
+        {
+            "entity_type": "CITY",
+            "instance": "Unique",
+            "id": "City_4"
+        }
+    ],
+    "edges": [
+        {
+            "min_distance": 15,
+            "max_distance": 30,
+            "source": "Village_3",
+            "target": "Mine_1",
+            "relation_type": "LOCATED_NEAR"
+        },
+        {
+            "source": "Mine_3",
+            "target": "Village_1",
+            "relation_type": "CONNECTS_TO"
+        }
+    ]
+}

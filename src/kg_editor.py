@@ -22,7 +22,6 @@ class KG_Editor:
             self.kg.graph.add_edge(
                 source_node, 
                 target_node, 
-                relation=relation_name, 
                 key=relation_type,
                 **attributes
             )
@@ -41,7 +40,7 @@ class KG_Editor:
         attr_items = ontology.RELATION_ATTRIBUTES.get(relation_type, {})
         attributes_count = len(attr_items)
 
-        attributes = {'relation_type':relation_type}
+        attributes = {}
 
         # If no attributes are needed, run the callback immediately with {}
         if attributes_count == 0:
@@ -98,13 +97,16 @@ class KG_Editor:
         self.kg.graph.clear()
         if dpg.does_item_exist("kg_editor"):
             dpg.delete_item("kg_editor", children_only=True)
+        print("Cleared current graph")
     
     def load_graph(self, sender, app_data):
         self.kg.load_graph(app_data['file_path_name'])
         self.display_graph()
+        print(f"Loaded graph from {app_data['file_path_name']}")
     
-    def save_graph(self):
-        pass
+    def save_graph(self, sender, app_data):
+        self.kg.save_graph(app_data['file_path_name'])
+        print(f"Saved graph to {app_data['file_path_name']}")
 
     def rename_node(sender, app_data, user_data):
         dpg.configure_item(user_data, label=app_data)

@@ -169,8 +169,8 @@ def app():
         with dpg.group(horizontal=True):
             dpg.add_text("Knowledge Graph")
             dpg.add_button(label="Clear", callback=kg_editor.clear_graph)
-            dpg.add_button(label="Load", callback=lambda: dpg.show_item("file_dialog"))
-            dpg.add_button(label="Save", callback=kg_editor.save_graph)
+            dpg.add_button(label="Load", callback=lambda: dpg.show_item("load_dialog"))
+            dpg.add_button(label="Save", callback=lambda: dpg.show_item("save_dialog"))
         
         # main panel - graph editor
         with dpg.node_editor(
@@ -186,11 +186,21 @@ def app():
         directory_selector=False, 
         show=False, 
         callback=kg_editor.load_graph, 
-        id="file_dialog", 
+        id="load_dialog", 
         width=700, 
         height=400
     ):
         dpg.add_file_extension(".json")
+
+    with dpg.file_dialog(
+            directory_selector=False, 
+            show=False, 
+            callback=kg_editor.save_graph, 
+            id="save_dialog", 
+            width=700, 
+            height=400
+        ):
+            dpg.add_file_extension(".json")
 
 
     with dpg.window(
