@@ -6,7 +6,8 @@ from enum import Enum, auto
 class Entity:
     entity_id: str
     entity_type: ontology.EntityType
-    instance: str
+    scope: ontology.EntityScope
+    properties: list = field(default_factory=list)
 
 @dataclass(frozen=True)
 class RegionConstraint:

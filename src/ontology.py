@@ -32,6 +32,10 @@ class SpatialType(Enum):
     POINT = 1        # singe-cell entities (villages, cities, mines...)
     FEATURE = 2      # multi-cell entities
 
+class EntityScope(Enum): 
+    CLASS = 0        
+    INSTANCE = 1      
+
 SPATIAL_TYPE_MAP = {
     EntityType.OCEAN: SpatialType.BIOME,
     EntityType.BEACH: SpatialType.BIOME,
@@ -86,8 +90,3 @@ RELATION_ATTRIBUTES = {
     RelationType.LOCATED_NEAR : {'min_distance':15.0, 'max_distance':30.0},
     RelationType.CONNECTS_TO : {}
 }
-
-
-
-
-

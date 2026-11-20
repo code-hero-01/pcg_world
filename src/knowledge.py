@@ -13,16 +13,12 @@ class WorldKG:
             data = json.load(f)
 
         for node in data["nodes"]:
-            try:
-                node["entity_type"] = ontology.EntityType[node["entity_type"]]
-            except KeyError:
+            if node["entity_type"] not in ontology.EntityType.__members__:
                 print(f"Invalid entity type for node {node}")
                 sys.exit()
 
         for edge in data["edges"]:
-            try:
-                edge["relation_type"] = ontology.RelationType[edge["relation_type"]]
-            except KeyError:
+            if edge["relation_type"] not in ontology.RelationType.__members__:
                 print(f"Invalid relation type for edge: {edge}")
                 sys.exit()
 
@@ -35,10 +31,13 @@ class WorldKG:
         
             
     def get_entity_type(self, entity):
-        return self.graph.nodes[entity].get('entity_type')
+        return ontology.EntityType[self.graph.nodes[entity].get('entity_type')]
 
     def post_order_dfs(self):
         return list(nx.dfs_postorder_nodes(self.graph))
+
+    def rename_node(self, old_id:str, new_id:str):
+        self.graph = nx.relabel_nodes(self.graph, {old_id : new_id})
 
     def collect_relations(self):
         relations = []
@@ -49,7 +48,7 @@ class WorldKG:
             relation = {
                 "source": source,
                 "target": target,
-                "relation_type": key,
+                "relation_type": ontology.RelationType[key],
                 "properties": {
                     k: v for k, v in data.items()
                     if k != "relation_type"
@@ -79,7 +78,7 @@ class WorldKG:
                 relation = {
                     "source": source,
                     "target": target,
-                    "relation_type": key,
+                    "relation_type": ontology.RelationType[key],
                     "properties": {
                         k: v for k, v in data.items()
                         if k != "relation_type"
@@ -131,14 +130,8 @@ class WorldKG:
                 data,
                 f, 
                 indent=4, 
-                default=
-                    lambda o: 
-                    o.name 
-                    if isinstance(o, ontology.RelationType) or isinstance(o, ontology.EntityType) 
-                    else o
-                )
+            )
             
-
 if __name__ == "__main__":
     kg = WorldKG()
     kg.load_graph("data/world_knowledge.json")

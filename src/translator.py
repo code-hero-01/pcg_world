@@ -26,11 +26,11 @@ class Translator:
 
     def translate(self): 
         self.entities = {}
-        for node_id, node_data in self.kg.graph.nodes(data= True):
+        for node_id, node_data in self.kg.graph.nodes(data=True):
             self.entities[node_id] = primitives.Entity(
-                entity_id= node_id,
-                entity_type= node_data['entity_type'],
-                instance= node_data['instance']
+                entity_id=node_id,
+                entity_type=ontology.EntityType[node_data['entity_type']],
+                scope=ontology.EntityScope[node_data['scope']]
             )
 
         self.spawnable_entities = [

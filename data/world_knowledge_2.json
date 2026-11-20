@@ -7,107 +7,107 @@
     "nodes": [
         {
             "entity_type": "OCEAN",
-            "instance": "Class",
+            "scope": "CLASS",
             "id": "Ocean"
         },
         {
             "entity_type": "BEACH",
-            "instance": "Class",
+            "scope": "CLASS",
             "id": "Beach"
         },
         {
             "entity_type": "DESERT",
-            "instance": "Class",
+            "scope": "CLASS",
             "id": "Desert"
         },
         {
             "entity_type": "FOREST",
-            "instance": "Class",
+            "scope": "CLASS",
             "id": "Forest"
         },
         {
             "entity_type": "GRASSLAND",
-            "instance": "Class",
+            "scope": "CLASS",
             "id": "Grassland"
         },
         {
             "entity_type": "SWAMP",
-            "instance": "Class",
+            "scope": "CLASS",
             "id": "Swamp"
         },
         {
             "entity_type": "ROCKY_MOUNTAIN",
-            "instance": "Class",
+            "scope": "CLASS",
             "id": "Rocky_Mountain"
         },
         {
             "entity_type": "TUNDRA",
-            "instance": "Class",
+            "scope": "CLASS",
             "id": "Tundra"
         },
         {
             "entity_type": "SNOWY_MOUNTAIN",
-            "instance": "Class",
+            "scope": "CLASS",
             "id": "Snowy_Mountain"
         },
         {
             "entity_type": "RIVER",
-            "instance": "Class",
+            "scope": "CLASS",
             "id": "River"
         },
         {
             "entity_type": "VILLAGE",
-            "instance": "Unique",
+            "scope": "INSTANCE",
             "id": "Village_1"
         },
         {
             "entity_type": "VILLAGE",
-            "instance": "Unique",
+            "scope": "INSTANCE",
             "id": "Village_2"
         },
         {
             "entity_type": "VILLAGE",
-            "instance": "Unique",
+            "scope": "INSTANCE",
             "id": "Village_3"
         },
         {
             "entity_type": "VILLAGE",
-            "instance": "Unique",
+            "scope": "INSTANCE",
             "id": "Village_4"
         },
         {
             "entity_type": "MINE",
-            "instance": "Unique",
+            "scope": "INSTANCE",
             "id": "Mine_1"
         },
         {
             "entity_type": "MINE",
-            "instance": "Unique",
+            "scope": "INSTANCE",
             "id": "Mine_2"
         },
         {
             "entity_type": "MINE",
-            "instance": "Unique",
+            "scope": "INSTANCE",
             "id": "Mine_3"
         },
         {
             "entity_type": "CITY",
-            "instance": "Unique",
+            "scope": "INSTANCE",
             "id": "City_1"
         },
         {
             "entity_type": "CITY",
-            "instance": "Unique",
+            "scope": "INSTANCE",
             "id": "City_2"
         },
         {
             "entity_type": "CITY",
-            "instance": "Unique",
+            "scope": "INSTANCE",
             "id": "City_3"
         },
         {
             "entity_type": "CITY",
-            "instance": "Unique",
+            "scope": "INSTANCE",
             "id": "City_4"
         }
     ],

@@ -165,7 +165,7 @@ class World:
         print("Created biomes...")
 
     def calculate_distance_map(self, target: primitives.Entity):
-        if target.instance == "Unique":
+        if target.scope == ontology.EntityScope.INSTANCE:
             non_target_mask = (self.entities != target.entity_id)
         elif ontology.SPATIAL_TYPE_MAP.get(target.entity_type) == ontology.SpatialType.BIOME:
             non_target_mask = (self.biomes != target.entity_type.value)
@@ -243,7 +243,7 @@ class World:
     #     return distance_to_target
 
     def find_distance(self, source_loc: tuple[int, int], target: primitives.Entity):
-        if target.instance == "Unique" and ontology.SPATIAL_TYPE_MAP.get(target.entity_type) == ontology.SpatialType.POINT:
+        if target.scope == ontology.EntityScope.INSTANCE and ontology.SPATIAL_TYPE_MAP.get(target.entity_type) == ontology.SpatialType.POINT:
             target_loc = self.entities_info.get(target.entity_id)
             return chebyshev_distance(source_loc, target_loc)
         
@@ -372,7 +372,7 @@ class World:
                                                                     primitives.Entity(
                                                                         entity_id="Ocean",
                                                                         entity_type=ontology.EntityType.OCEAN,
-                                                                        instance="Class"
+                                                                        scope=ontology.EntityScope.CLASS
                                                                     )
                                                                 )
         for start in river_starts:

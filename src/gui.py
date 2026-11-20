@@ -171,6 +171,7 @@ def app():
             dpg.add_button(label="Clear", callback=kg_editor.clear_graph)
             dpg.add_button(label="Load", callback=lambda: dpg.show_item("load_dialog"))
             dpg.add_button(label="Save", callback=lambda: dpg.show_item("save_dialog"))
+            dpg.add_button(label="Add Node", callback=kg_editor.add_node)
         
         # main panel - graph editor
         with dpg.node_editor(
@@ -181,6 +182,28 @@ def app():
             minimap_location=dpg.mvNodeMiniMap_Location_BottomRight
         ):
             pass
+
+    def on_mouse_click(sender, app_data):
+        # app_data is the mouse button (0 = Left Click, 1 = Right Click)
+        if app_data == dpg.mvMouseButton_Left:
+            if dpg.is_item_hovered("kg_editor"):
+                if len(dpg.get_selected_links('kg_editor')) > 0:
+                    selected_link = dpg.get_selected_links("kg_editor")[0]
+                    link_tag = dpg.get_item_alias(selected_link)
+                    kg_editor.edit_link(link_tag)
+                
+    
+    def on_mouse_double_click(sender, app_data):
+        # app_data is the mouse button (0 = Left Click, 1 = Right Click)
+        if app_data == dpg.mvMouseButton_Left:
+            if dpg.is_item_hovered("kg_editor"):
+                if len(dpg.get_selected_nodes('kg_editor')) > 0:
+                    node_tag = dpg.get_selected_nodes('kg_editor')[0]
+                    kg_editor.edit_node(node_tag)
+
+    with dpg.handler_registry():
+        dpg.add_mouse_click_handler(button=dpg.mvMouseButton_Left, callback=on_mouse_click)
+        dpg.add_mouse_double_click_handler(button=dpg.mvMouseButton_Left, callback=on_mouse_double_click)
 
     with dpg.file_dialog(
         directory_selector=False, 
@@ -204,16 +227,41 @@ def app():
 
 
     with dpg.window(
-        label="Enter Relation Attributes",
+        label="Relation Attributes",
         modal=True,
         show=False,
-        tag="attributes_input_dialog",
+        tag="relation_attributes_input_dialog",
         no_resize=True,
         width=300,
         height=150,
         pos=[150, 150]
     ):
         pass
+
+    with dpg.window(
+        label="Node Attributes",
+        modal=True,
+        show=False,
+        tag="edit_node_dialog",
+        no_resize=True,
+        width=300,
+        height=150,
+        pos=[150, 150]
+    ):
+        pass
+
+
+    with dpg.window(
+            label="Node Attributes",
+            modal=True,
+            show=False,
+            tag="add_node_dialog",
+            no_resize=True,
+            width=300,
+            height=150,
+            pos=[150, 150]
+        ):
+            pass
 
     dpg.set_primary_window("primary_window", True)
 
