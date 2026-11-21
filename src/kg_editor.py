@@ -252,8 +252,10 @@ class KG_Editor:
     def delete_selected_nodes(self):
         # Retrieve all currently highlighted nodes in the editor
         selected_nodes = dpg.get_selected_nodes("kg_editor")
-        for node in selected_nodes:
-            dpg.delete_item(node)
+        for node_tag in selected_nodes:
+            node_label = dpg.get_item_label(node_tag)
+            self.kg.graph.remove_node(node_label)
+        self.display_graph()
 
     def clear_graph(self):
         self.kg.graph.clear()

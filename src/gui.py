@@ -172,6 +172,7 @@ def app():
             dpg.add_button(label="Load", callback=lambda: dpg.show_item("load_dialog"))
             dpg.add_button(label="Save", callback=lambda: dpg.show_item("save_dialog"))
             dpg.add_button(label="Add Node", callback=kg_editor.add_node)
+            dpg.add_button(label="Delete Selected Nodes", callback=kg_editor.delete_selected_nodes)
         
         # main panel - graph editor
         with dpg.node_editor(
