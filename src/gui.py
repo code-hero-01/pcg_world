@@ -5,6 +5,7 @@ from pcg import World, WorldConfig
 from controller import Controller
 from knowledge import WorldKG
 from kg_editor import KG_Editor
+from validator import WorldValidator
 
 def demo_app():
     dpg.create_context()
@@ -27,30 +28,42 @@ def app():
         height=800
     )
 
+    log_messages = []
+    def _append_log(message):
+        log_messages.append(message)
+
+        if dpg.does_item_exist("generation_log"):
+            dpg.set_value("generation_log", "\n".join(log_messages))
+
+    results = []
+    def _append_result(message):
+        results.append(message)
+
+        if dpg.does_item_exist("validation_results"):
+            dpg.set_value("validation_results", "\n".join(results))
+
     seed = 42
     world_width = 512
     world_height = 512
     config = WorldConfig(height=world_height, width=world_width)
-    world = World(config=config, seed=seed)
+    world = World(config=config, seed=seed, log_callback=_append_log)
 
     kg = WorldKG()
     kg.load_graph("data/world_knowledge.json")
     
-    controller = Controller(world, kg)
+    controller = Controller(world, kg, _append_log)
 
     renderer = WorldRenderer(world)
 
     kg_editor = KG_Editor(kg)
 
     def _on_generate(sender, app_data):
-        nonlocal world
-
         seed = dpg.get_value("seed")
         width = dpg.get_value("width")
         height = dpg.get_value("height")
     
         config = WorldConfig(width=width, height=height)
-        world = World(config=config, seed=seed)
+        world = World(config=config, seed=seed, log_callback=_append_log)
         controller.world = world
 
         controller.execute_plan()
@@ -59,6 +72,10 @@ def app():
 
         # recreate the displayed image
         renderer.render_world()
+
+        validator = WorldValidator(world, kg, _append_result)
+        validator.validate()
+        validator.generate_report()
 
     def _on_base_map_change(sender, app_data):
         if (dpg.does_item_exist("base_layer_widget")):
@@ -151,10 +168,24 @@ def app():
 
             with dpg.tab_bar():
                 with dpg.tab(label="Log"):
-                    dpg.add_text("Generation output will appear here.")
+                    dpg.add_input_text(
+                        tag="generation_log",
+                        multiline=True,
+                        readonly=True,
+                        width=-1,
+                        height=-1,
+                        default_value=""
+                    )
 
                 with dpg.tab(label="Results"):
-                    dpg.add_text("Validation results will appear here.")
+                    dpg.add_input_text(
+                        tag="validation_results",
+                        multiline=True,
+                        readonly=True,
+                        width=-1,
+                        height=-1,
+                        default_value=""
+                    )
 
     
     with dpg.window(

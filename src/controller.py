@@ -11,9 +11,16 @@ from validator import WorldValidator
 
 
 class Controller:
-    def __init__(self, world : World, kg : WorldKG):
+    def __init__(self, world : World, kg : WorldKG, log_callback = None):
         self.world = world
         self.kg = kg
+
+        self.log_callback = log_callback
+
+    def _log(self, message: str):
+        print(message)
+        if self.log_callback:
+            self.log_callback(message)
 
     def execute_plan(self) -> World:
         translator = Translator(self.kg)
@@ -25,7 +32,7 @@ class Controller:
         self.plan = planner.plan
         
         for task in self.plan:
-            print(f"Executing {task.task_id}")
+            self._log(f"Executing {task.task_id}")
             
             if task.task_type == TaskType.GENERATE_TERRAIN:
                 self.world.generate_terrain()
@@ -39,7 +46,7 @@ class Controller:
             elif task.task_type == TaskType.GENERATE_CONNECTION:
                 self.world.generate_connection(task.constraints[0])
 
-        print("Generation complete")
+        self._log("Generation complete")
         return self.world
 
     def display(self):
@@ -105,7 +112,7 @@ class Controller:
         plt.show()
 
     def validate(self):
-        validator = WorldValidator(self.world, self.kg, self.translator.entities)
+        validator = WorldValidator(self.world, self.kg)
         validator.validate()
         validator.generate_report()
             

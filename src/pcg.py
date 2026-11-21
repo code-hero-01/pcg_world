@@ -33,7 +33,7 @@ def chebyshev_distance(loc1 : tuple, loc2 : tuple) -> int:
         return max(abs(p - q) for p, q in zip(loc1, loc2))
 
 class World:
-    def __init__(self, config : WorldConfig, seed: int):
+    def __init__(self, config : WorldConfig, seed: int, log_callback = None):
         self.rng = np.random.default_rng(seed)
 
         self.config = config
@@ -60,6 +60,13 @@ class World:
         self.entities_info = {}
         self.rivers_paths = []
         self.road_coords = {}
+
+        self.log_callback = log_callback
+
+    def _log(self, message: str):
+        print(message)
+        if self.log_callback:
+            self.log_callback(message)
 
     def generate_terrain(self):
         config = self.config
@@ -131,7 +138,7 @@ class World:
         self.elevation = self.elevation * np.clip((1.0 - (dist_from_center ** 2)), 0.0, 1.0)
         self.elevation = normalize(self.elevation)
         
-        print("Generated terrain...")
+        self._log("Generated terrain...")
         
     def create_biomes(self):
         conditions = [
@@ -144,7 +151,7 @@ class World:
             (self.elevation < 0.7) & (self.moisture <= 1),
 
             (self.elevation <= 1) & (self.moisture < 0.4),
-            (self.elevation <= 1) & (self.moisture < 0.6),
+            (self.elevation  <= 1) & (self.moisture < 0.6),
             (self.elevation <= 1) & (self.moisture <= 1)
         ]
 
@@ -162,7 +169,7 @@ class World:
 
         self.biomes = np.select(conditions, choices)
 
-        print("Created biomes...")
+        self._log("Created biomes...")
 
     def calculate_distance_map(self, target: primitives.Entity):
         if target.scope == ontology.EntityScope.INSTANCE:
@@ -244,7 +251,9 @@ class World:
 
     def find_distance(self, source_loc: tuple[int, int], target: primitives.Entity):
         if target.scope == ontology.EntityScope.INSTANCE and ontology.SPATIAL_TYPE_MAP.get(target.entity_type) == ontology.SpatialType.POINT:
-            target_loc = self.entities_info.get(target.entity_id)
+            target_loc = self.entities_info.get(target.entity_id, {}).get('coords')
+            if target_loc is None:
+                return -1
             return chebyshev_distance(source_loc, target_loc)
         
         if target.entity_id not in self.distance_to:
@@ -386,7 +395,7 @@ class World:
         # carve river beds into elevation
         self.elevation[self.rivers != -1] -= 0.02
 
-        print(f"Generated {len(self.rivers_paths)} rivers...")
+        self._log(f"Generated {len(self.rivers_paths)} rivers...")
 
     def _rasterize_river(self, path:list[tuple[int, int]], min_radius:int, max_radius:int):
         random_widths = self.rng.random(len(path))
@@ -467,14 +476,14 @@ class World:
             row, col = np.unravel_index(random_idx, self.biomes.shape)
             self.place_entity(entity= entity, location= (row, col))
         else:
-            print(f"Warning: No valid location found for the entity {entity}!")
+            self._log(f"Warning: No valid location found for the entity {entity}!")
         
 
     def place_entity(self, entity: primitives.Entity, location : tuple):
         row, col = location
         
         current_biome = ontology.EntityType(self.biomes[row, col])
-        print(f"Spawned {entity.entity_id} of type {entity.entity_type.name} at row={row}, col={col}, Biome = {current_biome}")
+        self._log(f"Spawned {entity.entity_id} of type {entity.entity_type.name} at row={row}, col={col}, Biome = {current_biome.name}")
         
         self.entities[row, col] = entity.entity_id
 
@@ -497,12 +506,12 @@ class World:
 
         start_indices = np.where(self.entities == start)
         if len(start_indices[0]) == 0:
-            print(f"Source entity {start} not found in entity_id_map")
+            self._log(f"Source entity {start} not found in entity_id_map")
             return
         
         goal_indices = np.where(self.entities == goal)
         if len(goal_indices[0]) == 0:
-            print(f"Goal entity {goal} not found in entity_id_map")
+            self._log(f"Goal entity {goal} not found in entity_id_map")
             return
 
         
@@ -545,6 +554,7 @@ class World:
                 self.road_coords[(start, goal)] = path
                 self._rasterize_road(path, radius=1)
 
+                self._log(f"Generated connection between {start} and {goal}")
                 return
 
             # explore neighbours

@@ -3,6 +3,7 @@ from pcg import World
 import ontology
 from dataclasses import dataclass
 from enum import Enum, auto
+import primitives
 
 class ValidationStatus(Enum):
     PASS = auto()
@@ -19,16 +20,30 @@ class ValidationResult:
     expected_value: object = None
 
 class WorldValidator:
-    def __init__(self, world: World, kg: WorldKG, entities: dict):
+    def __init__(self, world: World, kg: WorldKG, log_callback=None):
         self.world = world
         self.kg = kg
-        self.entities = entities
         self.results = []
+
+        self.entities = {}
+        for node_id, node_data in self.kg.graph.nodes(data=True):
+            self.entities[node_id] = primitives.Entity(
+                entity_id=node_id,
+                entity_type=ontology.EntityType[node_data['entity_type']],
+                scope=ontology.EntityScope[node_data['scope']]
+            )
+
+        self.log_callback = log_callback
+
+    def _log(self, msg: str):
+        print(msg)
+        if self.log_callback:
+            self.log_callback(msg)
 
     def validate(self):
         self.results.clear()
         
-        print("Validating world...")
+        self._log("Validating world...")
         
         # Iterate through KG relationships.
         # Dispatch to the appropriate validation method.
@@ -55,7 +70,8 @@ class WorldValidator:
     def validate_located_in(self, source, target):
         relation = ontology.RelationType.LOCATED_IN.name
         expected_value = target
-        coords = self.world.entities_info.get(source)
+        coords = self.world.entities_info.get(source)['coords']
+    
         if coords is None:
             actual_value = None
         else:
@@ -84,13 +100,13 @@ class WorldValidator:
     def validate_located_near(self, source, target, properties):
         relation = ontology.RelationType.LOCATED_NEAR.name
         expected_value = (properties['min_distance'], properties['max_distance'])
-        source_loc = self.world.entities_info.get(source)
+        source_loc = self.world.entities_info.get(source, {}).get('coords')
         
         if source_loc is None:
             status = ValidationStatus.ERROR
             actual_value = None
         else:
-            actual_value = self.world.find_distance(source_loc, self.entities.get(target))
+            actual_value = self.world.find_distance(source_loc, self.entities[target])
             
             # an actual_value of -1 means the target entity was completely unreachable or missing on the map
             if actual_value == -1:
@@ -114,8 +130,8 @@ class WorldValidator:
 
     def validate_connects_to(self, source, target):
         relation = ontology.RelationType.CONNECTS_TO.name
-        source_loc = self.world.entities_info.get(source)
-        target_loc = self.world.entities_info.get(target)
+        source_loc = self.world.entities_info.get(source, {}).get('coords')
+        target_loc = self.world.entities_info.get(target, {}).get('coords')
         expected_value = "Road connecting source and target"
 
         if (source_loc is None or target_loc is None):
@@ -143,19 +159,19 @@ class WorldValidator:
             
 
     def generate_report(self):
-        print("Validation Report:")
+        self._log("Validation Report:")
         if (len(self.results) == 0):
-            print("Nothing to evaluate!")
+            self._log("Nothing to evaluate!")
             return
         
         passed = 0
         failed = 0
         error = 0
         for result in self.results:
-            print(f"{result.relation}: {result.status.name}")
-            print(f"source: {result.source}, target: {result.target}")
-            print(f"expected: {result.expected_value}, actual: {result.actual_value}")
-            print("---")
+            self._log(f"{result.relation}: {result.status.name}")
+            self._log(f"source: {result.source}, target: {result.target}")
+            self._log(f"expected: {result.expected_value}, actual: {result.actual_value}")
+            self._log("---")
 
             if result.status == ValidationStatus.PASS:
                 passed += 1
@@ -164,4 +180,5 @@ class WorldValidator:
             elif result.status == ValidationStatus.ERROR:
                 error += 1
 
-        print("Satisfaction Rate=", passed / (passed + failed + error) * 100)
+        self._log(f"Satisfaction Rate = {passed / (passed + failed + error) * 100} %")
+    
