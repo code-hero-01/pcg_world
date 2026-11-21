@@ -24,8 +24,8 @@ def app():
 
     dpg.create_viewport(
         title="WorldGen Studio",
-        width=1000,
-        height=800
+        width=900,
+        height=900
     )
 
     log_messages = []
@@ -58,6 +58,8 @@ def app():
     kg_editor = KG_Editor(kg)
 
     def _on_generate(sender, app_data):
+        nonlocal world
+        
         seed = dpg.get_value("seed")
         width = dpg.get_value("width")
         height = dpg.get_value("height")
@@ -92,9 +94,7 @@ def app():
  
     with dpg.window(
         label="WorldGen Studio", 
-        tag="primary_window",
-        width=800,
-        height=800
+        tag="primary_window"
     ):
         # top bar
         with dpg.group(horizontal=True, label="top_bar"):
@@ -102,7 +102,7 @@ def app():
         
         # main content
         with dpg.group(horizontal=True, label="main_content"):
-            with dpg.child_window(width=-260, height=-200, label="world_view"):   
+            with dpg.child_window(width=-250, height=-250, label="world_view"):   
                 # large central panel - world view
                 with dpg.group(horizontal=True):
                     dpg.add_text("World")
@@ -118,7 +118,7 @@ def app():
                         dpg.add_plot_axis(dpg.mvYAxis, tag="world_y_axis", invert=True)
                 
             # right panel - settings
-            with dpg.child_window(width=0, height=-200, label="Settings"):
+            with dpg.child_window(width=0, height=-250, label="Settings"):
                 dpg.add_text("Settings")
                 dpg.add_separator()
                 dpg.add_spacer(height=5)
@@ -214,6 +214,75 @@ def app():
         ):
             pass
 
+
+    def _find_entity_at(mouse_x:int, mouse_y:int):
+        selected_entity = None
+
+        for entity_id, info in world.entities_info.items():
+            y, x = info['coords']
+            entity_type = info['entity_type']
+            sprite = renderer.sprite_cache[entity_type]
+            sprite_width, sprite_height = sprite.size
+            x_bounds = (x - sprite_width/2, x + sprite_width/2)
+            y_bounds = (y - sprite_height/2, y + sprite_height/2)
+
+            if x_bounds[0] <= mouse_x <= x_bounds[1] and y_bounds[0] <= mouse_y <= y_bounds[1]:
+                selected_entity = entity_id
+
+        return selected_entity
+
+    def _show_entity_info(entity_id : str, x : int, y : int):
+        if dpg.does_item_exist("entity_inspector"):
+            dpg.delete_item("entity_inspector", children_only=True)
+
+        attributes = kg.graph.nodes[entity_id]
+        attributes_count = len(attributes)
+
+        dpg.add_input_text(
+            label="id", 
+            width=100, 
+            default_value=entity_id, 
+            parent="entity_inspector",
+            tag=f"id_tag",
+            enabled=False
+        )
+
+        for attribute, val in attributes.items():
+            dpg.add_input_text(
+                label=attribute, 
+                width=100, 
+                default_value=str(val), 
+                parent="entity_inspector",
+                tag=f"{attribute}_tag",
+                enabled=False
+            )
+
+        
+        relations = list(kg.graph.in_edges(entity_id, keys=True)) + list(kg.graph.out_edges(entity_id, keys=True))
+
+        with dpg.table(
+            header_row=True,
+            hideable=True,
+            scrollX=True, 
+            scrollY=True, 
+            freeze_rows=1,
+            row_background=True,
+            parent="entity_inspector"
+        ):
+            # define columns
+            dpg.add_table_column(label="Source")
+            dpg.add_table_column(label="Relation")
+            dpg.add_table_column(label="Target")
+
+            # populate rows
+            for u, v, relation_type in relations:
+                with dpg.table_row():
+                    dpg.add_text(u)
+                    dpg.add_text(relation_type)
+                    dpg.add_text(v)
+        
+        dpg.configure_item("entity_inspector", show=True, height=attributes_count*30 + len(relations)*30, pos=[x+24, y])
+
     def on_mouse_click(sender, app_data):
         # app_data is the mouse button (0 = Left Click, 1 = Right Click)
         if app_data == dpg.mvMouseButton_Left:
@@ -222,6 +291,20 @@ def app():
                     selected_link = dpg.get_selected_links("kg_editor")[0]
                     link_tag = dpg.get_item_alias(selected_link)
                     kg_editor.edit_link(link_tag)
+
+            if dpg.is_item_hovered("world_plot"):
+                if not dpg.get_value("check_Entities"):
+                    dpg.configure_item("entity_inspector", show=False)
+                    return
+
+                mouse_x, mouse_y = dpg.get_plot_mouse_pos()
+
+                entity_id = _find_entity_at(mouse_x, mouse_y)
+                
+                if entity_id is not None:
+                    _show_entity_info(entity_id, mouse_x, mouse_y)
+                else:
+                    dpg.configure_item("entity_inspector", show=False)
                 
     
     def on_mouse_double_click(sender, app_data):
@@ -293,6 +376,16 @@ def app():
             pos=[150, 150]
         ):
             pass
+
+    with dpg.window(
+        label="Entity Inspector",
+        tag="entity_inspector",
+        width=320,
+        height=400,
+        pos=[150, 100],
+        show=False
+    ):
+        pass
 
     dpg.set_primary_window("primary_window", True)
 

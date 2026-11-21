@@ -41,6 +41,17 @@ class WorldRenderer:
         self.entities_tex_tag = "tex_Entities"
         self.roads_tex_tag = "tex_Roads"
 
+        self.sprite_cache = {}
+        for entity_type in self.SPRITES:
+            if entity_type not in self.sprite_cache:
+                sprite_path = self.SPRITES.get(entity_type)
+                if sprite_path is None:
+                    continue
+                img = Image.open(sprite_path).convert("RGBA")
+                # img = img.resize((sprite_width, sprite_height), Image.Resampling.LANCZOS)
+                
+                self.sprite_cache[entity_type] = img
+
 
     def _hex_to_rgb(self, hex_color: str)->tuple:
         hex_color = hex_color.lstrip("#")
@@ -150,8 +161,6 @@ class WorldRenderer:
         width = self.world.config.width
         height = self.world.config.height
         
-
-        sprite_cache = {}
         # transparent canvass
         canvas = Image.new("RGBA", (width, height), (0, 0, 0, 0))
 
@@ -159,20 +168,7 @@ class WorldRenderer:
             y, x = info['coords']
             entity_type = info['entity_type']
 
-            if entity_type not in sprite_cache:
-                sprite_path = self.SPRITES.get(entity_type)
-                if sprite_path is None:
-                    continue
-                img = Image.open(sprite_path).convert("RGBA")
-                # img = img.resize((sprite_width, sprite_height), Image.Resampling.LANCZOS)
-                
-                # Flip vertically 
-                img = img.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
-                
-                sprite_cache[entity_type] = img
-
-            sprite = sprite_cache[entity_type]
-
+            sprite = self.sprite_cache[entity_type]
             sprite_width, sprite_height = sprite.size
 
             # Centre sprite on its world coordinate.
@@ -259,16 +255,16 @@ class WorldRenderer:
                 dpg.add_image_series(
                     tag="base_layer_widget",
                     texture_tag=f"tex_{active_base}",
-                    bounds_min=(0, 0),
-                    bounds_max=(width, height),
+                    bounds_min=(0, height),
+                    bounds_max=(width, 0),
                     parent="world_y_axis"
                 )
 
                 for name in self.overlay_layers:
                     dpg.add_image_series(
                         f"tex_{name}",
-                        bounds_min=(0, 0),
-                        bounds_max=(width, height),
+                        bounds_min=(0, height),
+                        bounds_max=(width, 0),
                         tag=f"img_{name}",
                         show=dpg.get_value(f"check_{name}"),
                         parent="world_y_axis"
