@@ -39,7 +39,6 @@ def app():
     controller = Controller(world, kg)
 
     renderer = WorldRenderer(world)
-    renderer.render_world()
 
     kg_editor = KG_Editor(kg)
 

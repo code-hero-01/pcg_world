@@ -3,6 +3,7 @@ import dearpygui.dearpygui as dpg
 import numpy as np
 from ontology import EntityType
 from PIL import Image
+import scipy
 
 class WorldRenderer:
     BIOME_COLORS = {
@@ -49,6 +50,49 @@ class WorldRenderer:
             for i in (0, 2, 4)
         )
 
+    def _get_hill_shade(self, azimuth=45, altitude=45, ambient=0.4, z_scale=50.0, bands=3):
+        # Multiply elevation so 0.0-1.0 heights create steep slopes over 1-pixel steps
+        smooth_elev = scipy.ndimage.median_filter(self.world.elevation, size=5)
+        dy, dx = np.gradient(smooth_elev * z_scale)
+
+        # surface normals
+        nx = -dx
+        ny = -dy
+        nz = np.ones_like(self.world.elevation)
+
+        # normalize
+        length = np.sqrt(nx*nx + ny*ny + nz*nz)
+        nx /= length
+        ny /= length
+        nz /= length
+
+        # light vector (from north-east)
+        azimuth = np.radians(azimuth)
+        altitude = np.radians(altitude)
+
+        lx = np.cos(azimuth) * np.cos(altitude)
+        ly = np.sin(azimuth) * np.cos(altitude)
+        lz = np.sin(altitude)
+
+        # illumination = dot product of normal vector and light vector
+        illumination = nx * lx + ny * ly + nz * lz
+        illumination = np.clip(illumination, 0.0, 1.0) # no negative illumination
+
+        # quantize shading 
+        illumination = np.floor(illumination * bands) / bands
+
+        # combine ambient and directional lighting
+        shade = ambient + (1.0 - ambient) * illumination
+
+        return shade
+
+    def _get_depth_shade(self, ambient = 0.5, bands=4):
+        sea_level = 0.30
+        shade = np.clip(self.world.elevation / sea_level, 0.0, 1.0)
+        shade = np.floor(shade * bands) / bands
+        shade = ambient + (1 - ambient) * shade
+        return shade
+
     def _get_terrain_texture(self):
         terrain = self.world.elevation
 
@@ -71,7 +115,7 @@ class WorldRenderer:
     def _get_biomes_texture(self):
         biomes = self.world.biomes
 
-        rgba = np.zeros((self.world.config.height, self.world.config.width, 4), dtype=np.float32)
+        rgba = np.zeros((*biomes.shape, 4), dtype=np.float32)
 
         # Default colour for unclassified cells
         rgba[:, :] = (0.15, 0.15, 0.15, 1.0)
@@ -80,6 +124,14 @@ class WorldRenderer:
             rgb = self._hex_to_rgb(hex_color)
             mask = biomes == biome_id
             rgba[mask] = (*rgb, 1.0)
+
+        water_mask = biomes == EntityType.OCEAN.value
+        
+        hill_shade = self._get_hill_shade()
+        rgba[~water_mask, :3] *= hill_shade[~water_mask, None]
+
+        depth_shade = self._get_depth_shade()
+        rgba[water_mask, :3] *= depth_shade[water_mask, None]
 
         return rgba.ravel()
 
