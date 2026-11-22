@@ -18,17 +18,17 @@ class Planner:
         self.tasks["task:terrain"] = primitives.GenerationTask(
             task_id= "task:terrain",
             task_type= primitives.TaskType.GENERATE_TERRAIN,
-            )
+        )
 
         self.tasks["task:biomes"] = primitives.GenerationTask(
-                task_id= "task:biomes",
-                task_type= primitives.TaskType.GENERATE_ENTITY
-            )
+            task_id= "task:biomes",
+            task_type= primitives.TaskType.GENERATE_ENTITY
+        )
 
         self.tasks["task:rivers"] = primitives.GenerationTask(
-                task_id= "task:rivers",
-                task_type= primitives.TaskType.GENERATE_ENTITY
-            )
+            task_id= "task:rivers",
+            task_type= primitives.TaskType.GENERATE_ENTITY
+        )
         
         for entity_id in self.translator.spawnable_entities:
             entity = self.translator.entities[entity_id]
@@ -70,14 +70,19 @@ class Planner:
                         entity_type = prereq_entity.entity_type
                         spatial_type = ontology.SPATIAL_TYPE_MAP.get(entity_type)
                         
-                        if spatial_type == ontology.SpatialType.BIOME:
-                            dependencies.add(("task:biomes", task_id))
-                            
+                        if prereq_entity.scope == ontology.EntityScope.CLASS:
+                            if spatial_type == ontology.SpatialType.BIOME:
+                                dependencies.add(("task:biomes", task_id))
+                                                                             
+                            elif entity_type == ontology.EntityType.RIVER:
+                                dependencies.add(("task:rivers", task_id))  
+
+                            elif entity_type in ontology.SPAWNABLE:
+                                for entity_id in self.translator.expand_class(entity_type):
+                                    dependencies.add((f"task:{entity_id}", task_id))
+
                         elif spatial_type == ontology.SpatialType.POINT:
                             dependencies.add((f"task:{prereq_id}", task_id))
-                                                    # 💡 Rule C: Handle other features (like Rivers) if they have unique steps
-                        elif entity_type == ontology.EntityType.RIVER:
-                            dependencies.add(("task:rivers", task_id))
                     else:
                         if prereq_id in ["terrain", "biomes", "rivers"]:
                             dependencies.add((f"task:{prereq_id}", task_id))

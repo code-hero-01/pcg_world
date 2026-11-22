@@ -46,8 +46,8 @@ class KG_Editor:
             self.link_attributes_input(dict(attributes), on_attributes_ready)
 
     def link_attributes_input(self, attributes : dict, on_complete):
-        if dpg.does_item_exist("link_attributes_input_dialog"):
-            dpg.delete_item("link_attributes_input_dialog", children_only=True)
+        if dpg.does_item_exist("relation_attributes_input_dialog"):
+            dpg.delete_item("relation_attributes_input_dialog", children_only=True)
 
         attributes_count = len(attributes)
         # If no attributes are needed, run the callback immediately with {}
@@ -148,6 +148,7 @@ class KG_Editor:
         scope = ontology.EntityScope.INSTANCE
 
         def _on_entity_type_change(sender, app_data):
+            nonlocal entity_type, scope
             entity_type = ontology.EntityType[app_data]  
             if entity_type not in ontology.SPAWNABLE:
                 scope = ontology.EntityScope.CLASS
@@ -171,7 +172,7 @@ class KG_Editor:
                 entity_type.name 
                 for entity_type in ontology.EntityType 
                 if entity_type != ontology.EntityType.UNKOWN],
-            default_value=ontology.EntityType.VILLAGE,
+            default_value=ontology.EntityType.VILLAGE.name,
             label="entity_type",
             tag="entity_type",
             parent="add_node_dialog",
@@ -179,6 +180,7 @@ class KG_Editor:
         )
 
         def _on_scope_change(sender, app_data):
+            nonlocal entity_type, scope
             scope = ontology.EntityScope[app_data]  
             if scope == ontology.EntityScope.CLASS:
                 dpg.configure_item("id", default_value=entity_type.name, enabled=False)
@@ -187,7 +189,7 @@ class KG_Editor:
 
         dpg.add_combo(
                 items=[scope.name for scope in ontology.EntityScope],
-                default_value=ontology.EntityScope.INSTANCE,
+                default_value=ontology.EntityScope.INSTANCE.name,
                 label="scope",
                 tag="scope",
                 parent="add_node_dialog",
@@ -213,7 +215,7 @@ class KG_Editor:
                 attr_val = dpg.get_value(tag)
 
                 data[attr_name] = attr_val
-            print(data)
+            
             # add node
             id = data.pop("id")
             self.kg.graph.add_node(id, **data)
@@ -234,6 +236,8 @@ class KG_Editor:
                     if not dpg.does_item_exist(in_tag):
                         with dpg.node_attribute(attribute_type=dpg.mvNode_Attr_Input, tag=in_tag):
                             dpg.add_text(relation_type.name)
+
+            dpg.configure_item("add_node_dialog", show=False)
             
         dpg.add_spacer(height=5, parent="add_node_dialog")
         dpg.add_button(label="OK", width=50, callback=_submit, parent="add_node_dialog")

@@ -109,6 +109,16 @@
             "entity_type": "CITY",
             "scope": "INSTANCE",
             "id": "City_4"
+        },
+        {
+            "entity_type": "CITY",
+            "scope": "CLASS",
+            "id": "CITY"
+        },
+        {
+            "entity_type": "VILLAGE",
+            "scope": "CLASS",
+            "id": "VILLAGE"
         }
     ],
     "edges": [
@@ -122,6 +132,16 @@
         {
             "source": "Mine_3",
             "target": "Village_1",
+            "relation_type": "CONNECTS_TO"
+        },
+        {
+            "source": "CITY",
+            "target": "Beach",
+            "relation_type": "LOCATED_IN"
+        },
+        {
+            "source": "CITY",
+            "target": "VILLAGE",
             "relation_type": "CONNECTS_TO"
         }
     ]

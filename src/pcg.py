@@ -6,6 +6,7 @@ import heapq
 import ontology as ontology
 import primitives as primitives
 import scipy.ndimage
+import math
 
 @dataclass
 class WorldConfig:
@@ -28,9 +29,6 @@ class WorldConfig:
     moisture_lacunarity: float = 2.0
 
     river_threshold: int = 100
-
-def chebyshev_distance(loc1 : tuple, loc2 : tuple) -> int:
-        return max(abs(p - q) for p, q in zip(loc1, loc2))
 
 class World:
     def __init__(self, config : WorldConfig, seed: int, log_callback = None):
@@ -56,6 +54,7 @@ class World:
         self.rivers = np.full((self.ROWS, self.COLS), -1, dtype=int)
         self.roads = np.full((self.ROWS, self.COLS), -1, dtype=int) 
         self.entities = np.full((self.ROWS, self.COLS), "", dtype=object)
+        self.entity_types = np.zeros((self.ROWS, self.COLS), dtype=int)
 
         self.entities_info = {}
         self.rivers_paths = []
@@ -184,7 +183,7 @@ class World:
             else:
                 non_target_mask = np.ones((self.ROWS, self.COLS), dtype=bool)
         elif ontology.SPATIAL_TYPE_MAP.get(target.entity_type) == ontology.SpatialType.POINT:
-            non_target_mask = (self.entities == "")
+            non_target_mask = (self.entity_types != target.entity_type.value)
         else:
             non_target_mask = np.ones((self.ROWS, self.COLS), dtype=bool)
 
@@ -254,7 +253,7 @@ class World:
             target_loc = self.entities_info.get(target.entity_id, {}).get('coords')
             if target_loc is None:
                 return -1
-            return chebyshev_distance(source_loc, target_loc)
+            return math.dist(source_loc, target_loc)
         
         if target.entity_id not in self.distance_to:
             self.distance_to[target.entity_id] = self.calculate_distance_map(target)
@@ -486,6 +485,7 @@ class World:
         self._log(f"Spawned {entity.entity_id} of type {entity.entity_type.name} at row={row}, col={col}, Biome = {current_biome.name}")
         
         self.entities[row, col] = entity.entity_id
+        self.entity_types[row, col] = entity.entity_type.value
 
         self.entities_info[entity.entity_id] = {}
         self.entities_info[entity.entity_id]['coords'] = (row, col)
@@ -500,22 +500,59 @@ class World:
             return True
         return False
 
+    def _resolve_connection_target(self, target):
+        if target.scope == ontology.EntityScope.INSTANCE:
+            return [target.entity_id]
+
+        # Find all generated cells belonging to this entity type.
+        type_mask = (self.entity_types == target.entity_type.value)
+
+        entity_ids = np.unique(self.entities[type_mask])
+
+        # Ignore empty cells and invalid IDs.
+        entity_ids = [
+            entity_id for entity_id in entity_ids
+            if entity_id not in (None, "", 0, -1)
+        ]
+
+        return entity_ids
+
     def generate_connection(self, connection_constraint):  # a_star road
-        start = connection_constraint.source.entity_id
-        goal = connection_constraint.target.entity_id
+        source = connection_constraint.source
+        target = connection_constraint.target
 
-        start_indices = np.where(self.entities == start)
+        start_id = source.entity_id
+
+        start_indices = np.where(self.entities == start_id)
         if len(start_indices[0]) == 0:
-            self._log(f"Source entity {start} not found in entity_id_map")
-            return
-        
-        goal_indices = np.where(self.entities == goal)
-        if len(goal_indices[0]) == 0:
-            self._log(f"Goal entity {goal} not found in entity_id_map")
+            self._log(f"Source entity {start_id} not found in entity_id_map")
             return
 
-        
         start_cell = int(start_indices[1][0]), int(start_indices[0][0])
+
+        target_ids = self._resolve_connection_target(target)
+
+        if not target_ids:
+            self._log(f"No generated instances of {target.entity_type.name} found for connection from {start_id}")
+            return
+
+        candidates = []
+
+        for target_id in target_ids:
+            position = self.entities_info.get(target_id, {}).get('coords')
+
+            if position is None:
+                continue
+
+            distance = math.dist(position, start_cell)
+
+            candidates.append((distance, target_id, position))
+
+        if not candidates:
+            self._log(f"No valid connection target found for {start_id}")
+            return
+
+        _, target_id, target_cell = min(candidates)
 
         open_set = []
         closed_set = set()
@@ -540,7 +577,7 @@ class World:
 
             closed_set.add(current)
 
-            if self.entities[y, x] == goal:
+            if self.entities[y, x] == target_id:
                 path = []
                 while current in came_from:
                     path.append(current)
@@ -551,10 +588,10 @@ class World:
                 if path is None:
                     return
 
-                self.road_coords[(start, goal)] = path
+                self.road_coords[(start_id, target_id)] = path
                 self._rasterize_road(path, radius=1)
 
-                self._log(f"Generated connection between {start} and {goal}")
+                self._log(f"Generated connection between {start_id} and {target_id}")
                 return
 
             # explore neighbours
@@ -593,10 +630,10 @@ class World:
                 if tentative_g < g_cost.get(neighbour, float('inf')):
                     g_cost[neighbour] = tentative_g
 
-                    if goal not in self.distance_to:
-                        self.distance_to[goal] = self.calculate_distance_map(connection_constraint.target)
+                    if target_id not in self.distance_to:
+                        self.distance_to[target_id] = self.calculate_distance_map(connection_constraint.target)
 
-                    f_score = g_cost[neighbour] + 0.25 * self.distance_to[goal][ny, nx]   
+                    f_score = g_cost[neighbour] + 0.25 * self.distance_to[target_id][ny, nx]   
                     came_from[neighbour] = current
                     heapq.heappush(open_set, (f_score, neighbour))
 

@@ -11,9 +11,10 @@ from validator import WorldValidator
 
 
 class Controller:
-    def __init__(self, world : World, kg : WorldKG, log_callback = None):
+    def __init__(self, world : World, kg : WorldKG, translator = Translator, log_callback = None):
         self.world = world
         self.kg = kg
+        self.translator = translator
 
         self.log_callback = log_callback
 
@@ -23,10 +24,9 @@ class Controller:
             self.log_callback(message)
 
     def execute_plan(self) -> World:
-        translator = Translator(self.kg)
-        translator.translate()
+        self.translator.translate()
 
-        planner = Planner(translator)  
+        planner = Planner(self.translator)  
         planner.generate_plan()
 
         self.plan = planner.plan
@@ -112,7 +112,7 @@ class Controller:
         plt.show()
 
     def validate(self):
-        validator = WorldValidator(self.world, self.kg)
+        validator = WorldValidator(self.world, self.kg, self.translator)
         validator.validate()
         validator.generate_report()
             

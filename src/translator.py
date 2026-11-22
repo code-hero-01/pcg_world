@@ -5,7 +5,6 @@ import primitives as primitives
 class Translator:
     def __init__(self, kg : knowledge.WorldKG):
         self.kg = kg
-        self.relations = self.kg.collect_relations()
         self.entities = {}
         self.spawnable_entities = []
 
@@ -15,14 +14,46 @@ class Translator:
         self.tasks = []
 
         self.relation_handler = {
-            ontology.RelationType.LOCATED_IN: self.handle_regional_constraint,
-            ontology.RelationType.LOCATED_NEAR: self.handle_proximity_constraint,
-            ontology.RelationType.CONNECTS_TO: self.handle_connection_constraint
+            ontology.RelationType.LOCATED_IN: self.create_regional_constraint,
+            ontology.RelationType.LOCATED_NEAR: self.create_proximity_constraint,
+            ontology.RelationType.CONNECTS_TO: self.create_connection_constraint
         }
 
     def is_spawnable_entity(self, entity):
-        entity_type = self.kg.get_entity_type(entity)
-        return entity_type in ontology.SPAWNABLE
+        return entity.entity_type in ontology.SPAWNABLE and entity.scope == ontology.EntityScope.INSTANCE
+
+    def expand_relation(self, relation) -> list: 
+        source_entity = self.entities[relation['source']]
+
+        relations = []
+        
+        if source_entity.scope == ontology.EntityScope.CLASS:
+            for entity_id in self.expand_class(source_entity.entity_type):
+                if entity_id not in self.spawnable_entities:
+                    continue
+
+                new_relation = {
+                    "source": entity_id,
+                    "target": relation['target'],
+                    "relation_type": relation['relation_type'],
+                    "properties": relation['properties']
+                } 
+
+                relations.append(new_relation)
+        else:
+            relations.append(relation)
+      
+        return relations
+
+    def expand_class(self, entity_type : ontology.EntityType):
+        entity_ids = []
+
+        for entity_id in self.kg.get_entities_of_type(entity_type.name):
+            if entity_id not in self.spawnable_entities:
+                continue
+            entity_ids.append(entity_id)
+
+        return entity_ids
 
     def translate(self): 
         self.entities = {}
@@ -36,26 +67,32 @@ class Translator:
         self.spawnable_entities = [
                         entity_id 
                         for entity_id, entity in self.entities.items()
-                        if self.is_spawnable_entity(entity_id)
+                        if self.is_spawnable_entity(entity)
                     ]
         
         self.entity_constraints_map = {
                     entity: []
                     for entity in self.spawnable_entities
                 }
+        
+        self.relations = {}
+        for relation in self.kg.collect_relations():
+            for r in self.expand_relation(relation):
+                key = (r["source"], r["target"], r["relation_type"])
+                self.relations[key] = r
 
         self.connections = []
 
-        for relation in self.relations:
+        for key, relation in self.relations.items():
             self.relation_handler.get(relation['relation_type'])(relation)
 
 
-    def handle_regional_constraint(self, relation):
+    def create_regional_constraint(self, relation):
         region_constraint = primitives.RegionConstraint(region = self.entities[relation['target']])
         entity = self.entities[relation['source']]
         self.entity_constraints_map[entity.entity_id].append(region_constraint)
 
-    def handle_proximity_constraint(self, relation):
+    def create_proximity_constraint(self, relation):
         proximity_constraint = primitives.ProximityConstraint(
                                         target = self.entities[relation['target']],
                                         min_distance = relation['properties']['min_distance'],
@@ -65,7 +102,7 @@ class Translator:
         entity = self.entities[relation['source']]
         self.entity_constraints_map[entity.entity_id].append(proximity_constraint)
 
-    def handle_connection_constraint(self, relation):
+    def create_connection_constraint(self, relation):
         connection_constraint = primitives.ConnectionConstraint(
             source = self.entities[relation['source']], 
             target = self.entities[relation['target']]

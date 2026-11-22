@@ -4,6 +4,8 @@ import ontology
 from dataclasses import dataclass
 from enum import Enum, auto
 import primitives
+from translator import Translator
+import numpy as np
 
 class ValidationStatus(Enum):
     PASS = auto()
@@ -20,18 +22,11 @@ class ValidationResult:
     expected_value: object = None
 
 class WorldValidator:
-    def __init__(self, world: World, kg: WorldKG, log_callback=None):
+    def __init__(self, world: World, kg: WorldKG, translator: Translator, log_callback=None):
         self.world = world
         self.kg = kg
+        self.translator = translator
         self.results = []
-
-        self.entities = {}
-        for node_id, node_data in self.kg.graph.nodes(data=True):
-            self.entities[node_id] = primitives.Entity(
-                entity_id=node_id,
-                entity_type=ontology.EntityType[node_data['entity_type']],
-                scope=ontology.EntityScope[node_data['scope']]
-            )
 
         self.log_callback = log_callback
 
@@ -40,15 +35,18 @@ class WorldValidator:
         if self.log_callback:
             self.log_callback(msg)
 
+
     def validate(self):
         self.results.clear()
         
         self._log("Validating world...")
         
+        relations = self.translator.relations
+
         # Iterate through KG relationships.
         # Dispatch to the appropriate validation method.
-        relations = self.kg.collect_relations()
-        for relation in relations:
+        for key, relation in relations.items():
+            print(relation)
             if relation['relation_type'] == ontology.RelationType.LOCATED_IN:
                 self.validate_located_in(relation['source'], relation['target'])
             elif relation['relation_type'] == ontology.RelationType.LOCATED_NEAR:
@@ -70,7 +68,7 @@ class WorldValidator:
     def validate_located_in(self, source, target):
         relation = ontology.RelationType.LOCATED_IN.name
         expected_value = target
-        coords = self.world.entities_info.get(source)['coords']
+        coords = self.world.entities_info.get(source, {}).get('coords')
     
         if coords is None:
             actual_value = None
@@ -106,7 +104,7 @@ class WorldValidator:
             status = ValidationStatus.ERROR
             actual_value = None
         else:
-            actual_value = self.world.find_distance(source_loc, self.entities[target])
+            actual_value = self.world.find_distance(source_loc, self.translator.entities[target])
             
             # an actual_value of -1 means the target entity was completely unreachable or missing on the map
             if actual_value == -1:
@@ -131,21 +129,27 @@ class WorldValidator:
     def validate_connects_to(self, source, target):
         relation = ontology.RelationType.CONNECTS_TO.name
         source_loc = self.world.entities_info.get(source, {}).get('coords')
-        target_loc = self.world.entities_info.get(target, {}).get('coords')
+        if self.translator.entities[target].scope == ontology.EntityScope.INSTANCE:
+            target_locs = [self.world.entities_info.get(target, {}).get('coords')]
+        else:
+            target_locs = np.argwhere(self.world.entity_types == self.translator.entities[target].entity_type.value)
+        
         expected_value = "Road connecting source and target"
 
-        if (source_loc is None or target_loc is None):
+        status = ValidationStatus.FAIL
+        if (source_loc is None or len(target_locs) == 0):
             status = ValidationStatus.ERROR
             actual_value = None
         else:
-            road = self.world.road_coords.get((source, target))
-            if road is None:
-                status = ValidationStatus.FAIL
-                actual_value = None
-            else:
-                status = ValidationStatus.PASS
-                actual_value = len(road)
-
+            for target_loc in target_locs:
+                target = self.world.entities[tuple(target_loc)]
+                road = self.world.road_coords.get((source, target))
+                
+                if road is not None:
+                    status = ValidationStatus.PASS
+                    actual_value = len(road)
+                    break 
+        
         res = ValidationResult(
                     source=source,
                     target=target,

@@ -61,8 +61,8 @@ class WorldKG:
     
     def get_entities_of_type(self, entity_type):
         return [
-            node 
-            for node, data in self.graph.nodes(data=True) 
+            id 
+            for id, data in self.graph.nodes(data=True) 
             if data.get('entity_type') == entity_type
         ]
 

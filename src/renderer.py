@@ -13,13 +13,13 @@ class WorldRenderer:
         4: "#759e16",  # GRASSLAND
         5: "#177a17",  # FOREST
         6: "#255803",  # SWAMP
-        7: "#915D1B",  # ROCKY_MOUNTAIN
-        8: "#A3BAC9",  # TUNDRA
-        9: "#FFFFFF",  # SNOWY_MOUNTAIN
+        7: "#6e6862",  # ROCKY_MOUNTAIN
+        8: "#808D9E",  # TUNDRA
+        9: "#fcfcfc",  # SNOWY_MOUNTAIN
     }
 
     RIVER_COLOR = "#2180c0"
-    ROAD_COLOR = "#edd4a5"
+    ROAD_COLOR = "#b6aa95"
 
     SPRITES = {
         EntityType.CITY: "assets/city.png",
@@ -175,7 +175,7 @@ class WorldRenderer:
             left = int(x - sprite_width / 2)
             top = int(y - sprite_height / 2)
 
-            # Clip sprites that extend beyond world boundaries.
+            # clip sprites that extend beyond world boundaries.
             x1 = max(0, left)
             y1 = max(0, top)
             x2 = min(width, left + sprite_width)

@@ -6,6 +6,7 @@ from controller import Controller
 from knowledge import WorldKG
 from kg_editor import KG_Editor
 from validator import WorldValidator
+from translator import Translator
 
 def demo_app():
     dpg.create_context()
@@ -50,8 +51,9 @@ def app():
 
     kg = WorldKG()
     kg.load_graph("data/world_knowledge.json")
-    
-    controller = Controller(world, kg, _append_log)
+
+    translator = Translator(kg)
+    controller = Controller(world, kg, translator, _append_log)
 
     renderer = WorldRenderer(world)
 
@@ -59,6 +61,9 @@ def app():
 
     def _on_generate(sender, app_data):
         nonlocal world
+        nonlocal log_messages, results
+        log_messages = []
+        results = []
         
         seed = dpg.get_value("seed")
         width = dpg.get_value("width")
@@ -75,7 +80,7 @@ def app():
         # recreate the displayed image
         renderer.render_world()
 
-        validator = WorldValidator(world, kg, _append_result)
+        validator = WorldValidator(world, kg, controller.translator, _append_result)
         validator.validate()
         validator.generate_report()
 
