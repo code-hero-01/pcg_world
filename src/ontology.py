@@ -26,6 +26,8 @@ class RelationType(Enum):
     LOCATED_NEAR = auto()
     LOCATED_IN = auto()
     CONNECTS_TO = auto()
+    AVOIDS = auto()
+    SUPPLIES = auto()
 
 class SpatialType(Enum): 
     BIOME = 0        # large regions (oceans, forests...)
@@ -63,30 +65,32 @@ SPAWNABLE = {
 
 
 VALID_RELATIONS_FROM = {
-    EntityType.VILLAGE : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.CONNECTS_TO},
-    EntityType.CITY : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.CONNECTS_TO},
-    EntityType.MINE : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.CONNECTS_TO},
+    EntityType.VILLAGE : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.CONNECTS_TO, RelationType.AVOIDS},
+    EntityType.CITY : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.CONNECTS_TO, RelationType.AVOIDS},
+    EntityType.MINE : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.CONNECTS_TO, RelationType.AVOIDS, RelationType.SUPPLIES},
 }
 
 VALID_RELATIONS_TO = {
-    EntityType.OCEAN : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN},
-    EntityType.BEACH : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN},
-    EntityType.DESERT : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN},
-    EntityType.GRASSLAND : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN},
-    EntityType.FOREST : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN},
-    EntityType.SWAMP : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN},
-    EntityType.ROCKY_MOUNTAIN : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN},
-    EntityType.TUNDRA : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN},
-    EntityType.SNOWY_MOUNTAIN : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN},    
-    EntityType.RIVER : {RelationType.LOCATED_NEAR},
-    EntityType.ROAD : {RelationType.LOCATED_NEAR},
-    EntityType.VILLAGE : {RelationType.LOCATED_NEAR, RelationType.CONNECTS_TO},
-    EntityType.CITY : {RelationType.LOCATED_NEAR, RelationType.CONNECTS_TO},
-    EntityType.MINE : {RelationType.LOCATED_NEAR, RelationType.CONNECTS_TO},
+    EntityType.OCEAN : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.AVOIDS},
+    EntityType.BEACH : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.AVOIDS},
+    EntityType.DESERT : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.AVOIDS},
+    EntityType.GRASSLAND : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.AVOIDS},
+    EntityType.FOREST : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.AVOIDS},
+    EntityType.SWAMP : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.AVOIDS},
+    EntityType.ROCKY_MOUNTAIN : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.AVOIDS},
+    EntityType.TUNDRA : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.AVOIDS},
+    EntityType.SNOWY_MOUNTAIN : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.AVOIDS},    
+    EntityType.RIVER : {RelationType.LOCATED_NEAR, RelationType.AVOIDS},
+    EntityType.ROAD : {RelationType.LOCATED_NEAR, RelationType.AVOIDS},
+    EntityType.VILLAGE : {RelationType.LOCATED_NEAR, RelationType.CONNECTS_TO, RelationType.AVOIDS, RelationType.SUPPLIES},
+    EntityType.CITY : {RelationType.LOCATED_NEAR, RelationType.CONNECTS_TO, RelationType.AVOIDS, RelationType.SUPPLIES},
+    EntityType.MINE : {RelationType.LOCATED_NEAR, RelationType.CONNECTS_TO, RelationType.AVOIDS, RelationType.SUPPLIES},
 }
 
 RELATION_ATTRIBUTES = {
     RelationType.LOCATED_IN : {},
     RelationType.LOCATED_NEAR : {'min_distance':15.0, 'max_distance':30.0},
-    RelationType.CONNECTS_TO : {}
+    RelationType.AVOIDS: {'min_distance':100},
+    RelationType.CONNECTS_TO : {},
+    RelationType.SUPPLIES : {'min_distance':20.0, 'max_distance':45.0},
 }

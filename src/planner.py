@@ -29,7 +29,7 @@ class Planner:
             task_id= "task:rivers",
             task_type= primitives.TaskType.GENERATE_ENTITY
         )
-        
+
         for entity_id in self.translator.spawnable_entities:
             entity = self.translator.entities[entity_id]
             task_id = f"task:{entity.entity_id}"
@@ -75,7 +75,12 @@ class Planner:
                                 dependencies.add(("task:biomes", task_id))
                                                                              
                             elif entity_type == ontology.EntityType.RIVER:
-                                dependencies.add(("task:rivers", task_id))  
+                                dependencies.add(("task:rivers", task_id))
+
+                            elif entity_type == ontology.EntityType.ROAD:
+                                for i, constraint in enumerate(self.translator.connections):
+                                    connection_id = f"task:connection_{i}"
+                                    dependencies.add((connection_id, task_id))    
 
                             elif entity_type in ontology.SPAWNABLE:
                                 for entity_id in self.translator.expand_class(entity_type):

@@ -267,7 +267,6 @@ def app():
 
         with dpg.table(
             header_row=True,
-            hideable=True,
             scrollX=True, 
             scrollY=True, 
             freeze_rows=1,

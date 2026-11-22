@@ -1,6 +1,7 @@
 import ontology
 import knowledge as knowledge
 import primitives as primitives
+import math
 
 class Translator:
     def __init__(self, kg : knowledge.WorldKG):
@@ -14,9 +15,11 @@ class Translator:
         self.tasks = []
 
         self.relation_handler = {
-            ontology.RelationType.LOCATED_IN: self.create_regional_constraint,
-            ontology.RelationType.LOCATED_NEAR: self.create_proximity_constraint,
-            ontology.RelationType.CONNECTS_TO: self.create_connection_constraint
+            ontology.RelationType.LOCATED_IN: self.handle_located_in,
+            ontology.RelationType.LOCATED_NEAR: self.handle_located_near,
+            ontology.RelationType.CONNECTS_TO: self.handle_connected,
+            ontology.RelationType.AVOIDS: self.handle_avoids,
+            ontology.RelationType.SUPPLIES: self.handle_supplies,
         }
 
     def is_spawnable_entity(self, entity):
@@ -86,13 +89,12 @@ class Translator:
         for key, relation in self.relations.items():
             self.relation_handler.get(relation['relation_type'])(relation)
 
-
-    def create_regional_constraint(self, relation):
+    def handle_located_in(self, relation):
         region_constraint = primitives.RegionConstraint(region = self.entities[relation['target']])
         entity = self.entities[relation['source']]
         self.entity_constraints_map[entity.entity_id].append(region_constraint)
 
-    def create_proximity_constraint(self, relation):
+    def handle_located_near(self, relation):
         proximity_constraint = primitives.ProximityConstraint(
                                         target = self.entities[relation['target']],
                                         min_distance = relation['properties']['min_distance'],
@@ -102,7 +104,7 @@ class Translator:
         entity = self.entities[relation['source']]
         self.entity_constraints_map[entity.entity_id].append(proximity_constraint)
 
-    def create_connection_constraint(self, relation):
+    def handle_connected(self, relation):
         connection_constraint = primitives.ConnectionConstraint(
             source = self.entities[relation['source']], 
             target = self.entities[relation['target']]
@@ -110,6 +112,33 @@ class Translator:
         
         self.connections.append(connection_constraint)
 
+    def handle_avoids(self, relation):
+        proximity_constraint = primitives.ProximityConstraint(
+            target = self.entities[relation['target']],
+            min_distance = relation['properties']['min_distance'],
+            max_distance = math.inf
+        )
+
+        entity = self.entities[relation['source']]
+       
+        self.entity_constraints_map[entity.entity_id].append(proximity_constraint)
+
+    def handle_supplies(self, relation):
+        proximity_constraint = primitives.ProximityConstraint(
+            target = self.entities[relation['target']],
+            min_distance = relation['properties']['min_distance'],
+            max_distance = relation['properties']['max_distance']
+        )
+
+        entity = self.entities[relation['source']]
+        self.entity_constraints_map[entity.entity_id].append(proximity_constraint)
+
+        connection_constraint = primitives.ConnectionConstraint(
+            source = self.entities[relation['source']], 
+            target = self.entities[relation['target']]
+        )
+                
+        self.connections.append(connection_constraint)
         
 if __name__ == "__main__":
     kg = knowledge.WorldKG()

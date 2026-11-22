@@ -114,6 +114,26 @@
             "entity_type": "CITY",
             "scope": "INSTANCE",
             "id": "Anor Londo"
+        },
+        {
+            "entity_type": "VILLAGE",
+            "scope": "INSTANCE",
+            "id": "Ariandel"
+        },
+        {
+            "entity_type": "ROAD",
+            "scope": "CLASS",
+            "id": "ROAD"
+        },
+        {
+            "entity_type": "VILLAGE",
+            "scope": "INSTANCE",
+            "id": "boonies"
+        },
+        {
+            "entity_type": "MINE",
+            "scope": "INSTANCE",
+            "id": "gold mine"
         }
     ],
     "edges": [
@@ -142,11 +162,6 @@
             "source": "Village_3",
             "target": "Mine_1",
             "relation_type": "LOCATED_NEAR"
-        },
-        {
-            "source": "Village_4",
-            "target": "Tundra",
-            "relation_type": "LOCATED_IN"
         },
         {
             "source": "Mine_1",
@@ -240,6 +255,43 @@
             "source": "Anor Londo",
             "target": "Village_2",
             "relation_type": "CONNECTS_TO"
+        },
+        {
+            "min_distance": 15.0,
+            "max_distance": 30.0,
+            "source": "Ariandel",
+            "target": "ROAD",
+            "relation_type": "LOCATED_NEAR"
+        },
+        {
+            "source": "Ariandel",
+            "target": "Tundra",
+            "relation_type": "LOCATED_IN"
+        },
+        {
+            "min_distance": 200.0,
+            "source": "boonies",
+            "target": "ROAD",
+            "relation_type": "AVOIDS"
+        },
+        {
+            "source": "boonies",
+            "target": "Grassland",
+            "relation_type": "LOCATED_IN"
+        },
+        {
+            "min_distance": 15.0,
+            "max_distance": 30.0,
+            "source": "gold mine",
+            "target": "River",
+            "relation_type": "LOCATED_NEAR"
+        },
+        {
+            "min_distance": 20.0,
+            "max_distance": 35.0,
+            "source": "gold mine",
+            "target": "Anor Londo",
+            "relation_type": "SUPPLIES"
         }
     ]
 }
