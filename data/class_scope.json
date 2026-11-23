@@ -143,9 +143,9 @@
         {
             "min_distance": 20.0,
             "max_distance": 45.0,
-            "source": "MINE",
-            "target": "CITY",
-            "relation_type": "SUPPLIES"
+            "source": "CITY",
+            "target": "MINE",
+            "relation_type": "TRADES_WITH"
         },
         {
             "source": "MINE",

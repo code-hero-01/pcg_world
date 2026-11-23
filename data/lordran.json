@@ -309,16 +309,16 @@
         {
             "min_distance": 20.0,
             "max_distance": 35.0,
-            "source": "gold mine",
-            "target": "Anor Londo",
-            "relation_type": "SUPPLIES"
+            "source": "Anor Londo",
+            "target": "gold mine",
+            "relation_type": "TRADES_WITH"
         },
         {
             "min_distance": 20.0,
             "max_distance": 45.0,
-            "source": "gold mine",
-            "target": "Village_2",
-            "relation_type": "SUPPLIES"
+            "source": "Village_2",
+            "target": "gold mine",
+            "relation_type": "TRADES_WITH"
         },
         {
             "min_distance": 5.0,

@@ -19,7 +19,7 @@ class Translator:
             ontology.RelationType.LOCATED_NEAR: self.handle_located_near,
             ontology.RelationType.CONNECTS_TO: self.handle_connected,
             ontology.RelationType.AVOIDS: self.handle_avoids,
-            ontology.RelationType.SUPPLIES: self.handle_supplies,
+            ontology.RelationType.TRADES_WITH: self.handles_trade,
         }
 
     def is_spawnable_entity(self, entity):
@@ -123,7 +123,24 @@ class Translator:
        
         self.entity_constraints_map[entity.entity_id].append(proximity_constraint)
 
-    def handle_supplies(self, relation):
+    def handles_trade(self, relation):
+        proximity_constraint = primitives.ProximityConstraint(
+            target = self.entities[relation['target']],
+            min_distance = relation['properties']['min_distance'],
+            max_distance = relation['properties']['max_distance'],
+        )
+
+        entity = self.entities[relation['source']]
+        self.entity_constraints_map[entity.entity_id].append(proximity_constraint)
+
+        connection_constraint = primitives.ConnectionConstraint(
+            source = self.entities[relation['source']], 
+            target = self.entities[relation['target']]
+        )
+                
+        self.connections.append(connection_constraint)
+
+    def handles_trade(self, relation):
         proximity_constraint = primitives.ProximityConstraint(
             target = self.entities[relation['target']],
             min_distance = relation['properties']['min_distance'],

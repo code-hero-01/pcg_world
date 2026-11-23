@@ -28,7 +28,7 @@ class RelationType(Enum):
     LOCATED_IN = auto()
     CONNECTS_TO = auto()
     AVOIDS = auto()
-    SUPPLIES = auto()
+    TRADES_WITH = auto()
 
 class SpatialType(Enum): 
     BIOME = 0        # large regions (oceans, forests...)
@@ -68,10 +68,10 @@ SPAWNABLE = {
 
 
 VALID_RELATIONS_FROM = {
-    EntityType.VILLAGE : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.CONNECTS_TO, RelationType.AVOIDS},
-    EntityType.CITY : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.CONNECTS_TO, RelationType.AVOIDS},
-    EntityType.MINE : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.CONNECTS_TO, RelationType.AVOIDS, RelationType.SUPPLIES},
-    EntityType.PORT : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.CONNECTS_TO, RelationType.AVOIDS}
+    EntityType.VILLAGE : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.CONNECTS_TO, RelationType.AVOIDS, RelationType.TRADES_WITH},
+    EntityType.CITY : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.CONNECTS_TO, RelationType.AVOIDS, RelationType.TRADES_WITH},
+    EntityType.MINE : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.CONNECTS_TO, RelationType.AVOIDS},
+    EntityType.PORT : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.CONNECTS_TO, RelationType.AVOIDS, RelationType.TRADES_WITH}
 }
 
 VALID_RELATIONS_TO = {
@@ -86,10 +86,10 @@ VALID_RELATIONS_TO = {
     EntityType.SNOWY_MOUNTAIN : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.AVOIDS},    
     EntityType.RIVER : {RelationType.LOCATED_NEAR, RelationType.AVOIDS},
     EntityType.ROAD : {RelationType.LOCATED_NEAR, RelationType.AVOIDS},
-    EntityType.VILLAGE : {RelationType.LOCATED_NEAR, RelationType.CONNECTS_TO, RelationType.AVOIDS, RelationType.SUPPLIES},
-    EntityType.CITY : {RelationType.LOCATED_NEAR, RelationType.CONNECTS_TO, RelationType.AVOIDS, RelationType.SUPPLIES},
-    EntityType.PORT : {RelationType.LOCATED_NEAR, RelationType.CONNECTS_TO, RelationType.AVOIDS, RelationType.SUPPLIES},    
-    EntityType.MINE : {RelationType.LOCATED_NEAR, RelationType.CONNECTS_TO, RelationType.AVOIDS},
+    EntityType.VILLAGE : {RelationType.LOCATED_NEAR, RelationType.CONNECTS_TO, RelationType.AVOIDS, RelationType.TRADES_WITH},
+    EntityType.CITY : {RelationType.LOCATED_NEAR, RelationType.CONNECTS_TO, RelationType.AVOIDS, RelationType.TRADES_WITH},
+    EntityType.PORT : {RelationType.LOCATED_NEAR, RelationType.CONNECTS_TO, RelationType.AVOIDS, RelationType.TRADES_WITH},    
+    EntityType.MINE : {RelationType.LOCATED_NEAR, RelationType.CONNECTS_TO, RelationType.AVOIDS, RelationType.TRADES_WITH},
 }
 
 RELATION_ATTRIBUTES = {
@@ -97,5 +97,5 @@ RELATION_ATTRIBUTES = {
     RelationType.LOCATED_NEAR : {'min_distance':15.0, 'max_distance':30.0},
     RelationType.AVOIDS: {'min_distance':100},
     RelationType.CONNECTS_TO : {},
-    RelationType.SUPPLIES : {'min_distance':20.0, 'max_distance':45.0},
+    RelationType.TRADES_WITH: {'min_distance':20.0, 'max_distance':45.0},
 }

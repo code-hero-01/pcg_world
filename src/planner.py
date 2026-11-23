@@ -124,15 +124,15 @@ class Planner:
         G.add_nodes_from(self.tasks.keys())
 
         # try to break cycles
-        # while True:
-        #     try:
-        #         # Find a single cycle (returns a list of edges)
-        #         cycle = nx.find_cycle(G)
-        #         # Remove the last edge in the detected cycle
-        #         edge_to_remove = cycle[-1]
-        #         G.remove_edge(*edge_to_remove)
-        #     except nx.NetworkXNoCycle:
-        #         break
+        while True:
+            try:
+                # Find a single cycle (returns a list of edges)
+                cycle = nx.find_cycle(G)
+                # Remove the last edge in the detected cycle
+                edge_to_remove = cycle[-1]
+                G.remove_edge(*edge_to_remove)
+            except nx.NetworkXNoCycle:
+                break
 
         try:
             sorted_ids  = list(nx.lexicographical_topological_sort(G, key=lambda task_id: -self._constraint_score(task_id)))

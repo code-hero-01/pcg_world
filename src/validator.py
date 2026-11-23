@@ -54,8 +54,8 @@ class WorldValidator:
                 self.validate_avoids(relation['source'], relation['target'], relation['properties'])
             elif relation['relation_type'] == ontology.RelationType.CONNECTS_TO:
                 self.validate_connects_to(relation['source'], relation['target'])
-            elif relation['relation_type'] == ontology.RelationType.SUPPLIES:
-                self.validate_supplies(relation['source'], relation['target'], relation['properties'])
+            elif relation['relation_type'] == ontology.RelationType.TRADES_WITH:
+                self.validate_trade(relation['source'], relation['target'], relation['properties'])
             else: # unsupported relation
                 res = ValidationResult(
                     source="", 
@@ -198,8 +198,8 @@ class WorldValidator:
                          
         self.results.append(res)     
 
-    def validate_supplies(self, source, target, properties):
-        relation = ontology.RelationType.SUPPLIES.name
+    def validate_trade(self, source, target, properties):
+        relation = ontology.RelationType.TRADES_WITH.name
         expected_value = [(properties['min_distance'], properties['max_distance']), 'connecting road']
         source_loc = self.world.entities_info.get(source, {}).get('coords')
         
