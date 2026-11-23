@@ -136,12 +136,7 @@ def app():
                 dpg.add_spacer(height=5)
 
                 dpg.add_text("Terrain")
-                dpg.add_slider_float(
-                    label="Moisture",
-                    min_value=0.0,
-                    max_value=1.0,
-                    default_value=0.5
-                )
+                
 
                 dpg.add_separator()
                 dpg.add_spacer(height=5)

@@ -184,19 +184,29 @@ class KG_Editor:
             scope = ontology.EntityScope[app_data]  
             if scope == ontology.EntityScope.CLASS:
                 dpg.configure_item("id", default_value=entity_type.name, enabled=False)
+                if entity_type in ontology.SPAWNABLE:
+                    dpg.configure_item("count", enabled=True)
             else:
                 dpg.configure_item("id", default_value="", enabled=True)
 
         dpg.add_combo(
-                items=[scope.name for scope in ontology.EntityScope],
-                default_value=ontology.EntityScope.INSTANCE.name,
-                label="scope",
-                tag="scope",
-                parent="add_node_dialog",
-                callback= _on_scope_change,
-                enabled=True
-            )
+            items=[scope.name for scope in ontology.EntityScope],
+            default_value=ontology.EntityScope.INSTANCE.name,
+            label="scope",
+            tag="scope",
+            parent="add_node_dialog",
+            callback= _on_scope_change,
+            enabled=True
+        )
 
+        dpg.add_input_int(
+            label="count",
+            tag="count",
+            width=100,
+            parent="add_node_dialog",
+            default_value=1,
+            enabled=False
+        )
         
         # loop through and add input boxes for entity type specific attributes if any
         # TO DO
@@ -241,7 +251,7 @@ class KG_Editor:
             
         dpg.add_spacer(height=5, parent="add_node_dialog")
         dpg.add_button(label="OK", width=50, callback=_submit, parent="add_node_dialog")
-        dpg.configure_item("add_node_dialog", show=True, height= 3 * 30 + 40)
+        dpg.configure_item("add_node_dialog", show=True, height= 4 * 30 + 40)
     
     
     # callback runs when user attempts to disconnect attributes

@@ -51,10 +51,10 @@ class Translator:
     def expand_class(self, entity_type : ontology.EntityType):
         entity_ids = []
 
-        for entity_id in self.kg.get_entities_of_type(entity_type.name):
-            if entity_id not in self.spawnable_entities:
+        for eid, entity in self.entities.items():
+            if entity.entity_type != entity_type or eid not in self.spawnable_entities:
                 continue
-            entity_ids.append(entity_id)
+            entity_ids.append(eid)
 
         return entity_ids
 
@@ -67,17 +67,36 @@ class Translator:
                 scope=ontology.EntityScope[node_data['scope']]
             )
 
+        new_entities = {}
+        for eid, entity in self.entities.items():
+            print(eid)
+            if entity.scope == ontology.EntityScope.CLASS and entity.entity_type in ontology.SPAWNABLE:
+                num = 1
+                for _ in range(1, int(node_data.get('count', 0)) + 1):
+                    instance_eid = f"{node_id}_{num}"
+                    while instance_eid in self.entities:
+                        num += 1
+                        instance_eid = f"{node_id}_{num}"
+                    
+                    new_entities[instance_eid] = primitives.Entity(
+                        instance_eid, 
+                        entity.entity_type, 
+                        ontology.EntityScope.INSTANCE
+                    )
+                    num += 1
+        self.entities.update(new_entities)
+   
         self.spawnable_entities = [
-                        entity_id 
-                        for entity_id, entity in self.entities.items()
-                        if self.is_spawnable_entity(entity)
-                    ]
-        
+            entity_id 
+            for entity_id, entity in self.entities.items()
+            if self.is_spawnable_entity(entity)
+        ]
+
         self.entity_constraints_map = {
-                    entity: []
-                    for entity in self.spawnable_entities
-                }
-        
+            entity: []
+            for entity in self.spawnable_entities
+        }
+
         self.relations = {}
         for relation in self.kg.collect_relations():
             for r in self.expand_relation(relation):
