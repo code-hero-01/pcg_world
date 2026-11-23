@@ -19,8 +19,8 @@ class RegionConstraint:
 @dataclass(frozen=True)
 class ProximityConstraint:
     target: Entity
-    min_distance: int
-    max_distance: int
+    min_distance: float
+    max_distance: float
 
     def get_dependencies(self) -> tuple[str,...]:
         return (self.target.entity_id,)
@@ -47,5 +47,6 @@ class GenerationTask:
     entity: Entity = None
 
     constraints: list = field(default_factory=list) 
+
 
     

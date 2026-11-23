@@ -1,0 +1,162 @@
+{
+    "directed": true,
+    "multigraph": true,
+    "graph": {
+        "description": "Game world knowledge graph"
+    },
+    "nodes": [
+        {
+            "entity_type": "OCEAN",
+            "scope": "CLASS",
+            "id": "Ocean"
+        },
+        {
+            "entity_type": "BEACH",
+            "scope": "CLASS",
+            "id": "Beach"
+        },
+        {
+            "entity_type": "DESERT",
+            "scope": "CLASS",
+            "id": "Desert"
+        },
+        {
+            "entity_type": "FOREST",
+            "scope": "CLASS",
+            "id": "Forest"
+        },
+        {
+            "entity_type": "GRASSLAND",
+            "scope": "CLASS",
+            "id": "Grassland"
+        },
+        {
+            "entity_type": "SWAMP",
+            "scope": "CLASS",
+            "id": "Swamp"
+        },
+        {
+            "entity_type": "ROCKY_MOUNTAIN",
+            "scope": "CLASS",
+            "id": "Rocky_Mountain"
+        },
+        {
+            "entity_type": "TUNDRA",
+            "scope": "CLASS",
+            "id": "Tundra"
+        },
+        {
+            "entity_type": "SNOWY_MOUNTAIN",
+            "scope": "CLASS",
+            "id": "Snowy_Mountain"
+        },
+        {
+            "entity_type": "RIVER",
+            "scope": "CLASS",
+            "id": "River"
+        },
+        {
+            "entity_type": "VILLAGE",
+            "scope": "INSTANCE",
+            "id": "Village_1"
+        },
+        {
+            "entity_type": "VILLAGE",
+            "scope": "INSTANCE",
+            "id": "Village_2"
+        },
+        {
+            "entity_type": "VILLAGE",
+            "scope": "INSTANCE",
+            "id": "Village_3"
+        },
+        {
+            "entity_type": "VILLAGE",
+            "scope": "INSTANCE",
+            "id": "Village_4"
+        },
+        {
+            "entity_type": "MINE",
+            "scope": "INSTANCE",
+            "id": "Mine_1"
+        },
+        {
+            "entity_type": "MINE",
+            "scope": "INSTANCE",
+            "id": "Mine_2"
+        },
+        {
+            "entity_type": "MINE",
+            "scope": "INSTANCE",
+            "id": "Mine_3"
+        },
+        {
+            "entity_type": "CITY",
+            "scope": "INSTANCE",
+            "id": "City_1"
+        },
+        {
+            "entity_type": "CITY",
+            "scope": "INSTANCE",
+            "id": "City_2"
+        },
+        {
+            "entity_type": "CITY",
+            "scope": "INSTANCE",
+            "id": "City_3"
+        },
+        {
+            "entity_type": "CITY",
+            "scope": "INSTANCE",
+            "id": "City_4"
+        },
+        {
+            "entity_type": "VILLAGE",
+            "scope": "CLASS",
+            "id": "VILLAGE"
+        },
+        {
+            "entity_type": "MINE",
+            "scope": "CLASS",
+            "id": "MINE"
+        },
+        {
+            "entity_type": "CITY",
+            "scope": "CLASS",
+            "id": "CITY"
+        }
+    ],
+    "edges": [
+        {
+            "min_distance": 15.0,
+            "max_distance": 30.0,
+            "source": "VILLAGE",
+            "target": "CITY",
+            "relation_type": "LOCATED_NEAR"
+        },
+        {
+            "min_distance": 20.0,
+            "source": "VILLAGE",
+            "target": "Ocean",
+            "relation_type": "AVOIDS"
+        },
+        {
+            "min_distance": 20.0,
+            "max_distance": 45.0,
+            "source": "MINE",
+            "target": "CITY",
+            "relation_type": "SUPPLIES"
+        },
+        {
+            "source": "MINE",
+            "target": "Rocky_Mountain",
+            "relation_type": "LOCATED_IN"
+        },
+        {
+            "min_distance": 20.0,
+            "source": "CITY",
+            "target": "Ocean",
+            "relation_type": "AVOIDS"
+        }
+    ]
+}

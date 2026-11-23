@@ -118,16 +118,16 @@ class WorldValidator:
             else:
                 status = ValidationStatus.FAIL
 
-            res = ValidationResult(
-                source=source,
-                target=target,
-                relation=relation,
-                status=status,
-                actual_value=actual_value,
-                expected_value=expected_value
-            )
-                    
-            self.results.append(res)
+        res = ValidationResult(
+            source=source,
+            target=target,
+            relation=relation,
+            status=status,
+            actual_value=actual_value,
+            expected_value=expected_value
+        )
+                
+        self.results.append(res)
         
 
     def validate_avoids(self, source, target, properties):
@@ -173,6 +173,7 @@ class WorldValidator:
         expected_value = "Road connecting source and target"
 
         status = ValidationStatus.FAIL
+        actual_value = None
         if (source_loc is None or len(target_locs) == 0):
             status = ValidationStatus.ERROR
             actual_value = None

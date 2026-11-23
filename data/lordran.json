@@ -134,6 +134,26 @@
             "entity_type": "MINE",
             "scope": "INSTANCE",
             "id": "gold mine"
+        },
+        {
+            "entity_type": "PORT",
+            "scope": "INSTANCE",
+            "id": "Port_1"
+        },
+        {
+            "entity_type": "PORT",
+            "scope": "INSTANCE",
+            "id": "Port_2"
+        },
+        {
+            "entity_type": "PORT",
+            "scope": "INSTANCE",
+            "id": "Port_3"
+        },
+        {
+            "entity_type": "PORT",
+            "scope": "CLASS",
+            "id": "PORT"
         }
     ],
     "edges": [
@@ -292,6 +312,20 @@
             "source": "gold mine",
             "target": "Anor Londo",
             "relation_type": "SUPPLIES"
+        },
+        {
+            "min_distance": 20.0,
+            "max_distance": 45.0,
+            "source": "gold mine",
+            "target": "Village_2",
+            "relation_type": "SUPPLIES"
+        },
+        {
+            "min_distance": 5.0,
+            "max_distance": 30.0,
+            "source": "PORT",
+            "target": "Ocean",
+            "relation_type": "LOCATED_NEAR"
         }
     ]
 }

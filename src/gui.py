@@ -263,15 +263,22 @@ def app():
             )
 
         
-        relations = list(kg.graph.in_edges(entity_id, keys=True)) + list(kg.graph.out_edges(entity_id, keys=True))
+        relations = list(kg.graph.in_edges(entity_id, keys=True)) + list(kg.graph.out_edges(entity_id, keys=True)) 
+        
+        # for class level entity of same type
+        entity_type = kg.get_entity_type(entity_id).name
+        if entity_type in kg.graph.nodes:
+            relations += list(kg.graph.in_edges(entity_type, keys=True)) + list(kg.graph.out_edges(entity_type, keys=True))
 
+        table_height = (len(relations) + 1) * 25 + 10
         with dpg.table(
             header_row=True,
             scrollX=True, 
             scrollY=True, 
             freeze_rows=1,
             row_background=True,
-            parent="entity_inspector"
+            parent="entity_inspector",
+            height = min(table_height, 300)
         ):
             # define columns
             dpg.add_table_column(label="Source")
@@ -285,7 +292,7 @@ def app():
                     dpg.add_text(relation_type)
                     dpg.add_text(v)
         
-        dpg.configure_item("entity_inspector", show=True, height=attributes_count*30 + len(relations)*30, pos=[x+24, y])
+        dpg.configure_item("entity_inspector", show=True, height=(attributes_count+1)*30 + table_height + 50, pos=[x+24, y])
 
     def on_mouse_click(sender, app_data):
         # app_data is the mouse button (0 = Left Click, 1 = Right Click)

@@ -189,7 +189,7 @@ class World:
 
         # handle the edge case where NO target exists on the map
         if np.all(non_target_mask):
-            return np.full((self.ROWS, self.COLS), -1.0, dtype=np.float32)
+            return np.full((self.ROWS, self.COLS), np.inf, dtype=np.float32)
 
         # compute exact Euclidean distance (returns float64, cast to float32 to save memory)
         distance_to_target = scipy.ndimage.distance_transform_edt(non_target_mask).astype(np.float32)
@@ -456,7 +456,6 @@ class World:
         proximity_mask &= (self.distance_to[constraint.target.entity_id] <= constraint.max_distance) & (self.distance_to[constraint.target.entity_id] >= constraint.min_distance)
         return proximity_mask
 
-
     def spawn_entity(self, entity: primitives.Entity, constraints: list):
         valid_mask = (self.entities == "") & (self.rivers == -1) & (self.roads == -1)
         
@@ -490,6 +489,8 @@ class World:
         self.entities_info[entity.entity_id] = {}
         self.entities_info[entity.entity_id]['coords'] = (row, col)
         self.entities_info[entity.entity_id]['entity_type'] = entity.entity_type
+
+        self.distance_to.clear()
 
 
     def random_choose(self, arr):

@@ -25,6 +25,7 @@ class WorldRenderer:
         EntityType.CITY: "assets/city.png",
         EntityType.VILLAGE: "assets/village.png",
         EntityType.MINE: "assets/mine.png",
+        EntityType.PORT: "assets/port.png",
     }
 
     def __init__(self, world: World):
@@ -139,7 +140,7 @@ class WorldRenderer:
         water_mask = biomes == EntityType.OCEAN.value
         
         hill_shade = self._get_hill_shade()
-        rgba[~water_mask, :3] *= hill_shade[~water_mask, None]
+        rgba[np.logical_not(water_mask), :3] *= hill_shade[np.logical_not(water_mask), None]
 
         depth_shade = self._get_depth_shade()
         rgba[water_mask, :3] *= depth_shade[water_mask, None]

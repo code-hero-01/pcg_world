@@ -84,7 +84,8 @@ class Planner:
 
                             elif entity_type in ontology.SPAWNABLE:
                                 for entity_id in self.translator.expand_class(entity_type):
-                                    dependencies.add((f"task:{entity_id}", task_id))
+                                    if f'task:{entity_id}' != task_id:
+                                        dependencies.add((f"task:{entity_id}", task_id))
 
                         elif spatial_type == ontology.SpatialType.POINT:
                             dependencies.add((f"task:{prereq_id}", task_id))
@@ -94,7 +95,26 @@ class Planner:
                         else:
                             dependencies.add((f"task:{prereq_id}", task_id))
 
-        return dependencies    
+        # self loop safeguard
+        dependencies = {
+            (source, target)
+            for source, target in dependencies
+            if source != target
+        }
+        return dependencies   
+
+
+    def _constraint_score(self, task_id):
+        score = 0
+
+        task = self.tasks[task_id]
+        for constraint in task.constraints or []:
+            if isinstance(constraint, primitives.RegionConstraint):
+                score += 2
+            elif isinstance(constraint, primitives.ProximityConstraint):
+                score += 3
+
+        return score 
 
     def generate_plan(self):
         dependencies = self._generate_dependencies()
@@ -103,12 +123,23 @@ class Planner:
 
         G.add_nodes_from(self.tasks.keys())
 
+        # try to break cycles
+        # while True:
+        #     try:
+        #         # Find a single cycle (returns a list of edges)
+        #         cycle = nx.find_cycle(G)
+        #         # Remove the last edge in the detected cycle
+        #         edge_to_remove = cycle[-1]
+        #         G.remove_edge(*edge_to_remove)
+        #     except nx.NetworkXNoCycle:
+        #         break
+
         try:
-            sorted_ids  = list(nx.lexicographical_topological_sort(G))
+            sorted_ids  = list(nx.lexicographical_topological_sort(G, key=lambda task_id: -self._constraint_score(task_id)))
             self.plan = [self.tasks[tid] for tid in sorted_ids] 
         except nx.NetworkXUnfeasible:
             cycle = nx.find_cycle(G)   
-            print(f"Invalid knowledge graph - cycle found: {cycle}")  
+            print(f"Invalid task plan - cycle found: {cycle}")  
             sys.exit(1)
 
 

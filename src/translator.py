@@ -96,10 +96,10 @@ class Translator:
 
     def handle_located_near(self, relation):
         proximity_constraint = primitives.ProximityConstraint(
-                                        target = self.entities[relation['target']],
-                                        min_distance = relation['properties']['min_distance'],
-                                        max_distance = relation['properties']['max_distance']
-                                    )
+            target = self.entities[relation['target']],
+            min_distance = relation['properties']['min_distance'],
+            max_distance = relation['properties']['max_distance'],
+        )
 
         entity = self.entities[relation['source']]
         self.entity_constraints_map[entity.entity_id].append(proximity_constraint)
@@ -116,7 +116,7 @@ class Translator:
         proximity_constraint = primitives.ProximityConstraint(
             target = self.entities[relation['target']],
             min_distance = relation['properties']['min_distance'],
-            max_distance = math.inf
+            max_distance = math.inf,
         )
 
         entity = self.entities[relation['source']]
@@ -127,7 +127,7 @@ class Translator:
         proximity_constraint = primitives.ProximityConstraint(
             target = self.entities[relation['target']],
             min_distance = relation['properties']['min_distance'],
-            max_distance = relation['properties']['max_distance']
+            max_distance = relation['properties']['max_distance'],
         )
 
         entity = self.entities[relation['source']]

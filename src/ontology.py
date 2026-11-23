@@ -17,6 +17,7 @@ class EntityType(Enum):
     VILLAGE = auto()
     CITY = auto()
     MINE = auto()
+    PORT = auto()
 
     RIVER = auto()
 
@@ -52,6 +53,7 @@ SPATIAL_TYPE_MAP = {
     EntityType.VILLAGE: SpatialType.POINT,
     EntityType.CITY: SpatialType.POINT,
     EntityType.MINE: SpatialType.POINT,
+    EntityType.PORT: SpatialType.POINT,
 
     EntityType.RIVER: SpatialType.FEATURE,
     EntityType.ROAD: SpatialType.FEATURE,
@@ -60,7 +62,8 @@ SPATIAL_TYPE_MAP = {
 SPAWNABLE = {
     EntityType.VILLAGE,
     EntityType.CITY,
-    EntityType.MINE 
+    EntityType.MINE,
+    EntityType.PORT,
 }
 
 
@@ -68,6 +71,7 @@ VALID_RELATIONS_FROM = {
     EntityType.VILLAGE : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.CONNECTS_TO, RelationType.AVOIDS},
     EntityType.CITY : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.CONNECTS_TO, RelationType.AVOIDS},
     EntityType.MINE : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.CONNECTS_TO, RelationType.AVOIDS, RelationType.SUPPLIES},
+    EntityType.PORT : {RelationType.LOCATED_NEAR, RelationType.LOCATED_IN, RelationType.CONNECTS_TO, RelationType.AVOIDS}
 }
 
 VALID_RELATIONS_TO = {
@@ -84,7 +88,8 @@ VALID_RELATIONS_TO = {
     EntityType.ROAD : {RelationType.LOCATED_NEAR, RelationType.AVOIDS},
     EntityType.VILLAGE : {RelationType.LOCATED_NEAR, RelationType.CONNECTS_TO, RelationType.AVOIDS, RelationType.SUPPLIES},
     EntityType.CITY : {RelationType.LOCATED_NEAR, RelationType.CONNECTS_TO, RelationType.AVOIDS, RelationType.SUPPLIES},
-    EntityType.MINE : {RelationType.LOCATED_NEAR, RelationType.CONNECTS_TO, RelationType.AVOIDS, RelationType.SUPPLIES},
+    EntityType.PORT : {RelationType.LOCATED_NEAR, RelationType.CONNECTS_TO, RelationType.AVOIDS, RelationType.SUPPLIES},    
+    EntityType.MINE : {RelationType.LOCATED_NEAR, RelationType.CONNECTS_TO, RelationType.AVOIDS},
 }
 
 RELATION_ATTRIBUTES = {
